@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Rauschen-Werkzeug</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎧</text></svg>">
+<style>
+  @font-face { font-family: "Atkinson Hyperlegible"; font-weight: 400; font-display: swap;
+    src: url("lib/fonts/atkinson-hyperlegible-latin-400-normal.woff2") format("woff2"); }
+  @font-face { font-family: "Atkinson Hyperlegible"; font-weight: 700; font-display: swap;
+    src: url("lib/fonts/atkinson-hyperlegible-latin-700-normal.woff2") format("woff2"); }
+  :root {
+    --bg: #F5F3EE; --surface: #FFFFFF; --surface-2: #F7F8F7; --hover: #F2F4F4; --ink: #1F2328; --muted: #57606A;
+    --card-line: #DFE3DF; --list-line: #D8DEE4; --field-line: #CCD3D0; --field-div: #E3E7E4; --btn-line: #D0D7DE; --drop-line: #C4CBD1;
+    --primary: #006064; --primary-hover: #004447; --on-primary: #FFFFFF; --primary-ring: rgba(0, 96, 100, 0.15);
+    --added: #B8860B; --content: #2F6F6B; --added-wash: rgba(184, 134, 11, 0.12);
+    --warn: #B71C1C; --focus: #005FCC; color-scheme: light;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #12181B; --surface: #1A2226; --surface-2: #20292D; --hover: #232D31; --ink: #E3E9E6; --muted: #9DAAA6;
+      --card-line: #2E3A3E; --list-line: #2E3A3E; --field-line: #3B494E; --field-div: #2E3A3E; --btn-line: #3B494E; --drop-line: #46565B;
+      --primary: #5FBDC0; --primary-hover: #7FD0D2; --on-primary: #0B1416; --primary-ring: rgba(95, 189, 192, 0.25);
+      --added: #DDB64C; --content: #6CC0B5; --added-wash: rgba(221, 182, 76, 0.16);
+      --warn: #E58474; --focus: #7DB3F0; color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #12181B; --surface: #1A2226; --surface-2: #20292D; --hover: #232D31; --ink: #E3E9E6; --muted: #9DAAA6;
+    --card-line: #2E3A3E; --list-line: #2E3A3E; --field-line: #3B494E; --field-div: #2E3A3E; --btn-line: #3B494E; --drop-line: #46565B;
+    --primary: #5FBDC0; --primary-hover: #7FD0D2; --on-primary: #0B1416; --primary-ring: rgba(95, 189, 192, 0.25);
+    --added: #DDB64C; --content: #6CC0B5; --added-wash: rgba(221, 182, 76, 0.16);
+    --warn: #E58474; --focus: #7DB3F0; color-scheme: dark;
+  }
+  *, *::before, *::after { box-sizing: inherit; }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+    font-family: "Atkinson Hyperlegible", "Segoe UI", system-ui, -apple-system, sans-serif;
+    font-size: 1rem; line-height: 1.5; }
+  button, input { font: inherit; }
+  [hidden] { display: none !important; }
+  .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); border: 0; }
+  main { max-width: 820px; margin: 0 auto; padding: 48px 20px 64px; display: flex; flex-direction: column; gap: 32px; }
+  header { display: flex; flex-direction: column; gap: 10px; }
+  h1 { margin: 0; font-size: 1.875rem; line-height: 2.375rem; font-weight: 700; letter-spacing: -0.01em; }
+  .lede { margin: 0; font-size: 1rem; line-height: 1.625rem; color: var(--muted); max-width: 640px; }
+
+  /* Settings */
+  .settings { background: var(--surface); border: 1px solid var(--card-line); border-radius: 12px; padding: 20px;
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px 24px; align-items: start; }
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field-label { font-size: 0.875rem; line-height: 1.25rem; font-weight: 700; }
+  .hint { font-size: 0.8125rem; line-height: 1.125rem; color: var(--muted); }
+  .fieldwrap { display: flex; align-items: stretch; height: 44px; border: 1px solid var(--field-line); border-radius: 8px;
+    background: var(--surface); overflow: hidden; }
+  .fieldwrap:focus-within { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-ring); }
+  .fieldwrap.invalid { border-color: var(--warn); }
+  .fieldwrap input { flex: 1 1 auto; min-width: 0; width: 100%; border: 0; padding: 0 0 0 12px; font-size: 1rem;
+    font-variant-numeric: tabular-nums; color: var(--ink); background: transparent; text-align: right; outline: none; }
+  .fieldwrap input.text { text-align: left; padding-right: 12px; }
+  .fieldwrap input.text::placeholder { color: var(--muted); opacity: 1; }
+  .unit { display: flex; align-items: center; padding: 0 12px 0 6px; font-size: 0.875rem; color: var(--muted); }
+  .step { width: 40px; flex-shrink: 0; border: 0; background: var(--surface-2); color: var(--muted); font-size: 1.125rem; cursor: pointer; }
+  .step:first-child { border-right: 1px solid var(--field-div); }
+  .step:last-child { border-left: 1px solid var(--field-div); }
+  .step:hover { background: var(--hover); color: var(--ink); }
+  .switch { display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 12px; border: 1px solid var(--field-line);
+    border-radius: 8px; background: var(--surface); cursor: pointer; font-size: 0.9375rem; line-height: 1.375rem; }
+  .switch:hover { border-color: var(--muted); }
+  /* Noise level and "under the audio" have no effect without noise */
+  .field.off { opacity: 0.5; }
+  .field.off .switch, .field.off .step { cursor: default; }
+  .field.off .switch:hover { border-color: var(--field-line); }
+  .field.off .step:hover { background: var(--surface-2); color: var(--muted); }
+  .switch input { width: 18px; height: 18px; margin: 0; flex-shrink: 0; accent-color: var(--primary); }
+
+  /* Drop zone */
+  .drop { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+    padding: 32px 20px; background: var(--surface); border: 1.5px dashed var(--drop-line); border-radius: 10px;
+    cursor: pointer; text-align: center; transition: border-color .15s, background .15s; }
+  .drop:hover { background: var(--surface-2); border-color: var(--muted); }
+  .drop.over { border-color: var(--primary); background: var(--added-wash); }
+  .drop:focus-within { outline: 3px solid var(--focus); outline-offset: 2px; }
+  .drop.disabled { cursor: default; opacity: 0.6; }
+  .drop-title { font-size: 1rem; line-height: 1.5rem; font-weight: 700; }
+  .drop-title u { color: var(--primary); }
+  .drop-sub { font-size: 0.875rem; line-height: 1.25rem; color: var(--muted); }
+  .engine { font-size: 0.875rem; color: var(--muted); margin-top: -20px; min-height: 1.25rem; }
+  .engine:empty { display: none; }
+  .engine.err { color: var(--warn); font-weight: 700; }
+
+  /* File list */
+  .list { display: flex; flex-direction: column; gap: 12px; }
+  .list-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 20px; }
+  .list-head h2 { margin: 0; font-size: 1.125rem; line-height: 1.625rem; font-weight: 700; }
+  .batch { display: inline-flex; align-items: center; gap: 8px; font-size: 0.875rem; line-height: 1.25rem; color: var(--muted);
+    font-variant-numeric: tabular-nums; }
+  .legend { display: flex; align-items: center; gap: 16px; font-size: 0.8125rem; line-height: 1.25rem; color: var(--muted); }
+  .legend span { display: flex; align-items: center; gap: 6px; }
+  .swatch { width: 14px; height: 10px; border-radius: 2px; }
+  .swatch.added { background: var(--added); }
+  .swatch.content { background: var(--content); }
+  .list-actions { flex-grow: 1; display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 8px; }
+  .note { font-size: 0.8125rem; color: var(--muted); }
+  .note:empty { display: none; }
+  .files { border: 1px solid var(--list-line); border-radius: 10px; overflow: hidden; background: var(--surface); }
+  .file + .file { border-top: 1px solid var(--list-line); }
+  .row-head { width: 100%; min-height: 60px; display: flex; align-items: center; gap: 12px; padding: 12px 16px; border: 0;
+    background: var(--surface); text-align: left; cursor: pointer; color: var(--ink); }
+  .row-head:hover:not(:disabled) { background: var(--surface-2); }
+  .row-head:disabled { cursor: default; }
+  .chevron { flex-shrink: 0; transition: transform 120ms; }
+  .row-head[aria-expanded="true"] .chevron { transform: rotate(90deg); }
+  .row-head:disabled .chevron { visibility: hidden; }
+  .row-title { flex: 1 1 auto; min-width: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; }
+  .name { font-size: 0.9375rem; line-height: 1.375rem; font-weight: 700; overflow-wrap: anywhere; }
+  .meta { font-size: 0.8125rem; line-height: 1.25rem; color: var(--muted); }
+  .row-status { flex-shrink: 0; max-width: 55%; display: inline-flex; align-items: center; gap: 6px;
+    font-size: 0.8125rem; line-height: 1.25rem; text-align: right; color: var(--muted); }
+  .row-status.good { color: var(--content); font-weight: 700; white-space: nowrap; }
+  .row-status.bad { color: var(--warn); font-weight: 700; }
+  .row-status svg { flex-shrink: 0; }
+  .spinner { flex-shrink: 0; width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--field-div);
+    border-top-color: var(--primary); animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .bar { height: 4px; margin: -4px 16px 12px 46px; border-radius: 2px; background: var(--field-div); overflow: hidden; }
+  .bar i { display: block; height: 100%; width: 0; background: var(--primary); transition: width .2s; }
+  .row-body { padding: 4px 16px 20px 46px; display: flex; flex-direction: column; gap: 14px; }
+  .wave { display: block; width: 100%; height: 64px; }
+  .preview { width: 100%; max-height: 260px; border-radius: 6px; background: #000; cursor: pointer; }
+  .issues { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px;
+    font-size: 0.875rem; color: var(--warn); font-weight: 700; }
+  .player { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; }
+  .play { width: 40px; height: 40px; flex-shrink: 0; border: 0; border-radius: 50%; background: var(--primary); cursor: pointer;
+    display: flex; align-items: center; justify-content: center; color: var(--on-primary); padding: 0; }
+  .play:hover { background: var(--primary-hover); }
+  .time, .level-info { font-size: 0.8125rem; line-height: 1.25rem; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .seek { flex: 1 1 160px; min-width: 120px; height: 40px; margin: 0; accent-color: var(--primary); }
+  .file-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+
+  /* Buttons */
+  .btn { height: 38px; padding: 0 16px; border-radius: 6px; font-size: 0.875rem; font-weight: 700; cursor: pointer; }
+  .btn-flat { border: 0; background: var(--primary); color: var(--on-primary); }
+  .btn-flat:hover { background: var(--primary-hover); }
+  .btn-stroked { border: 1px solid var(--btn-line); background: var(--surface); color: var(--ink); }
+  .btn-stroked:hover { background: var(--hover); }
+  .list-head .btn { height: 36px; padding: 0 14px; }
+  .btn:disabled { opacity: 0.45; cursor: default; }
+  button:focus-visible, input:focus-visible, a:focus-visible, .seek:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+  .fieldwrap input:focus-visible { outline: none; }
+
+  details { color: var(--muted); font-size: 0.9375rem; }
+  details summary { cursor: pointer; color: var(--ink); font-weight: 700; }
+  details p, details ul { max-width: 640px; }
+  details h3 { margin: 1.25rem 0 0.25rem; font-size: 1rem; color: var(--ink); }
+  details ul { padding-left: 1.25rem; }
+  details li + li { margin-top: 0.5rem; }
+  details a { color: var(--primary); }
+  /* Embedded license texts of the offline version */
+  .license-text { margin-top: 0.4rem; }
+  .license-text summary { font-weight: 400; color: var(--primary); }
+  .license-text pre { max-height: 320px; overflow: auto; white-space: pre-wrap; font-size: 0.8125rem; padding: 12px;
+    background: var(--surface); border: 1px solid var(--card-line); border-radius: 6px; color: var(--ink); }
+  /* Help button above the settings card on the right; the negative margin pulls it close to the card */
+  .help-row { display: flex; justify-content: flex-end; margin-bottom: -20px; }
+  .help-btn { display: inline-flex; align-items: center; gap: 6px; text-decoration: none; }
+  @media (prefers-reduced-motion: reduce) {
+    .drop, .bar i, .chevron { transition: none; }
+    .spinner { animation-duration: 2.4s; }   /* slower rather than still, otherwise there is no sign that work is in progress */
+  }
+  @media (max-width: 520px) {
+    .row-body { padding-left: 16px; }
+    .bar { margin-left: 16px; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Rauschen-Werkzeug</h1>
+    <p class="lede">Ergänzt Audios und Videos am Anfang um unhörbar leises Rauschen. So haben USB-C-Adapter mit eigenem Audio-Chip Zeit zum Aufwachen, und der Anfang geht nicht mehr verloren. Die Dateien werden in diesem Browser bearbeitet und nirgendwo hochgeladen.</p>
+  </header>
+
+  <div class="help-row">
+    <a class="btn btn-stroked help-btn" id="help-link" href="help.html">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.3a2.6 2.6 0 0 1 5 .9c0 1.7-2.5 2.3-2.5 3.8"/><path d="M12 17h.01"/></svg>
+      Hilfe
+    </a>
+  </div>
+  <section class="settings" aria-label="Einstellungen">
+    <div class="field">
+      <label class="field-label" for="lead">Vorlauf</label>
+      <div class="fieldwrap">
+        <button type="button" class="step" data-for="lead" data-dir="-1" aria-label="Vorlauf verringern">−</button>
+        <input id="lead" type="text" inputmode="decimal" autocomplete="off" value="1" aria-describedby="lead-hint">
+        <span class="unit" aria-hidden="true">s</span>
+        <button type="button" class="step" data-for="lead" data-dir="1" aria-label="Vorlauf erhöhen">+</button>
+      </div>
+      <span class="hint" id="lead-hint">Rauschen vor dem ersten Ton, in Sekunden</span>
+    </div>
+    <div class="field">
+      <label class="field-label" for="level">Rauschpegel</label>
+      <div class="fieldwrap">
+        <button type="button" class="step" data-for="level" data-dir="-1" aria-label="Rauschpegel verringern">−</button>
+        <input id="level" type="text" autocomplete="off" value="-70" aria-describedby="level-hint">
+        <span class="unit" aria-hidden="true">dBFS</span>
+        <button type="button" class="step" data-for="level" data-dir="1" aria-label="Rauschpegel erhöhen">+</button>
+      </div>
+      <span class="hint" id="level-hint">Je niedriger, desto leiser</span>
+    </div>
+    <div class="field">
+      <span class="field-label" aria-hidden="true">Rauschen unter dem Ton</span>
+      <label class="switch"><input id="underlay" type="checkbox" checked><span>Auch unter den Ton legen</span></label>
+    </div>
+    <div class="field">
+      <span class="field-label" aria-hidden="true">Ohne Rauschen</span>
+      <label class="switch"><input id="nonoise" type="checkbox" aria-describedby="nonoise-hint"><span>Kein Rauschen, nur Stille</span></label>
+      <span class="hint" id="nonoise-hint">Vorlauf als reine Stille. Hilft nicht gegen Adapter, die den Anfang verschlucken.</span>
+    </div>
+    <div class="field">
+      <label class="field-label" for="suffix">Zusatz im Dateinamen</label>
+      <div class="fieldwrap">
+        <input id="suffix" class="text" type="text" autocomplete="off" spellcheck="false" placeholder="z. B. _vorlauf" aria-describedby="suffix-hint">
+      </div>
+      <span class="hint" id="suffix-hint">Leer lassen, um die Originalnamen zu behalten</span>
+    </div>
+  </section>
+
+  <label class="drop" id="drop">
+    <input id="picker" class="sr-only" type="file" multiple accept=".mp3,.wav,.m4a,.mp4,.m4v,.mov,audio/mpeg,audio/wav,audio/mp4,video/mp4,video/quicktime">
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="color: var(--muted)"><path d="M12 16V4"/><path d="M7 9l5-5 5 5"/><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg>
+    <span class="drop-title">Dateien hierher ziehen oder <u>auswählen</u></span>
+    <span class="drop-sub">MP3, WAV und M4A sowie Videos als MP4 oder MOV, auch mehrere auf einmal</span>
+  </label>
+  <div class="engine" id="engine" role="status"></div>
+
+  <section class="list" id="actions" aria-labelledby="list-title" hidden>
+    <div class="list-head">
+      <h2 id="list-title">0 Dateien</h2>
+      <span class="batch" id="batch" hidden><span class="spinner" aria-hidden="true"></span><span id="batch-text" role="status"></span></span>
+      <div class="legend" aria-hidden="true">
+        <span><i class="swatch added"></i>ergänzter Vorlauf</span>
+        <span><i class="swatch content"></i>ursprünglicher Ton</span>
+      </div>
+      <div class="list-actions">
+        <span class="note" id="note" role="status"></span>
+        <button type="button" id="redo" class="btn btn-stroked" hidden>Mit neuen Einstellungen wiederholen</button>
+        <button type="button" id="clear" class="btn btn-stroked">Liste leeren</button>
+        <button type="button" id="zip" class="btn btn-stroked" disabled>Alle speichern</button>
+      </div>
+    </div>
+    <div class="files" id="files"></div>
+  </section>
+
+  <details>
+    <summary>Was genau passiert</summary>
+    <p>Vor den Ton wird ein Vorlauf aus leisem Rauschen gesetzt, auf Wunsch liegt dasselbe Rauschen auch unter dem restlichen Ton. Mit „Kein Rauschen, nur Stille“ besteht der Vorlauf stattdessen aus reiner Stille. Das verlängert die Datei nur, gegen Adapter, die den Anfang verschlucken, hilft es nicht. Bei Videos steht das erste Bild für die Dauer des Vorlaufs still, damit Bild und Ton synchron bleiben. Dafür wird das Video neu encodiert, was je nach Länge und Rechner einige Zeit dauern kann.</p>
+    <p>Die Dateien behalten ihren Namen und ihr Format. Abtastrate und Bitrate entsprechen dem Original. Der Pegel wird so angepasst, dass das Rauschen nach der Komprimierung tatsächlich beim eingestellten Wert ankommt, und jede fertige Datei wird zur Kontrolle noch einmal geprüft.</p>
+    <p>„Alle speichern“ fasst alle fertigen Dateien in einer ZIP-Datei zusammen.</p>
+    <p>Bearbeitete Dateien erhalten eine Markierung im Kommentarfeld und werden bei einem zweiten Durchgang übersprungen. Das gilt auch für Dateien, die mit dem Skript <code>rauschen_werkzeug.py</code> bearbeitet wurden.</p>
+  </details>
+
+  <details>
+    <summary>Datenschutz und Lizenzen</summary>
+    <h3>Datenschutz</h3>
+    <p>Die Dateien werden ausschließlich in diesem Browser bearbeitet. Sie werden nicht hochgeladen und nirgendwohin übertragen. Das Werkzeug setzt keine Cookies, enthält kein Tracking und ruft keine externen Dienste auf. Auch Schriften und Bibliotheken sind mitgeliefert.</p>
+    <p>Gespeichert wird nur der „Zusatz im Dateinamen“, im Speicher dieses Browsers auf diesem Gerät, damit er beim nächsten Mal wieder eingetragen ist. Er wird nicht übertragen. Wer das Feld leert, löscht ihn.</p>
+    <p>Wird das Werkzeug über das Internet aufgerufen, protokolliert der Webserver wie bei jeder Webseite technische Zugriffsdaten wie die IP-Adresse. Näheres steht in der Datenschutzerklärung des Anbieters dieser Seite.</p>
+    <h3>Lizenzen</h3>
+    <ul>
+      <li><strong>Eigener Code</strong> des Werkzeugs: MIT-Lizenz (<a class="license" href="LICENSE.txt" target="_blank" rel="noopener">Lizenztext</a>)</li>
+      <li><strong>FFmpeg</strong> 5.1.4 als ffmpeg.wasm (<code>@ffmpeg/core</code> 0.12.10), mit x264, x265, LAME, libvpx, Ogg, Theora, Vorbis, Opus, libwebp, FreeType, FriBidi, HarfBuzz, libass, zlib und zimg, übersetzt mit Emscripten: GPL-2.0-or-later (<a class="license" href="lib/core/LICENSE-GPL-2.0.txt" target="_blank" rel="noopener">Lizenztext</a>). Enthaltene Teile unter LGPL-2.1 (<a class="license" href="lib/core/LICENSE-LGPL-2.1.txt" target="_blank" rel="noopener">Lizenztext</a>). Urheber- und Lizenzhinweise aller enthaltenen Bibliotheken (<a class="license" href="lib/core/THIRD-PARTY-NOTICES.txt" target="_blank" rel="noopener">Lizenzhinweise</a>). Quellcode: vollständig als Release „ffmpeg-core-0.12.10-source“ im Repository dieses Werkzeugs, außerdem unter <a href="https://github.com/ffmpegwasm/ffmpeg.wasm" target="_blank" rel="noopener">github.com/ffmpegwasm/ffmpeg.wasm</a></li>
+      <li><strong>Atkinson Hyperlegible</strong>, Copyright 2020 Braille Institute of America, Inc.: SIL Open Font License 1.1 (<a class="license" href="lib/fonts/LICENSE.txt" target="_blank" rel="noopener">Lizenztext</a>)</li>
+    </ul>
+    <p id="license-overview">Eine ausführliche Übersicht mit allen Bibliotheken im FFmpeg-Kern steht in <code>LICENSES.md</code> im Ordner des Werkzeugs.</p>
+  </details>
+</main>
+
+<script>
+// Separate script: under file:// the browser does not run the module below at all, because it blocks its imports
+if (location.protocol === 'file:') {
+  const engineEl = document.getElementById('engine');
+  engineEl.textContent = 'Dieses Werkzeug muss über einen Webserver geöffnet werden, nicht als Datei. Siehe README.md.';
+  engineEl.classList.add('err');
+  document.getElementById('drop').classList.add('disabled');
+  document.getElementById('picker').disabled = true;
+  // Otherwise the browser opens a dropped file instead of the page
+  ['dragover', 'drop'].forEach(t => document.addEventListener(t, e => e.preventDefault()));
+}
+</script>
+<script type="module">
+import { FFmpeg } from './engine.js';
+import { zipStore } from './zip.js';
+
+const MARKER = 'rauschen-werkzeug';
+const AUDIO_EXT = ['mp3', 'wav', 'm4a'];
+const VIDEO_EXT = ['mp4', 'm4v', 'mov'];
+const MIME = { mp3: 'audio/mpeg', wav: 'audio/wav', m4a: 'audio/mp4', mp4: 'video/mp4', m4v: 'video/mp4', mov: 'video/quicktime' };
+const MP3_RATES_V1 = [32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320];
+const MP3_RATES_V2 = [8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160];
+
+const $ = id => document.getElementById(id);
+const engineEl = $('engine'), noteEl = $('note'), filesEl = $('files');
+let entries = [];
+let queue = Promise.resolve();
+
+// ------------------------------------------------------------------ ffmpeg
+let ffmpeg = null, loadedOnce = false, logLines = [], onLogLine = null;
+
+function engine(text, err = false) { engineEl.textContent = text; engineEl.classList.toggle('err', err); }
+
+// ffmpeg.wasm does not free all memory after each call and crashes after a few dozen files
+// ("memory access out of bounds"). Each file therefore gets a freshly started instance; that only takes
+// a fraction of a second because the browser caches it.
+async function freshEngine() {
+  if (ffmpeg) ffmpeg.terminate();
+  ffmpeg = new FFmpeg();
+  ffmpeg.on('log', ({ message }) => { logLines.push(message); if (onLogLine) onLogLine(message); });
+  if (!loadedOnce) engine('Das Bearbeitungsprogramm wird geladen, beim ersten Mal ca. 32 MB …');
+  try {
+    await ffmpeg.load();
+  } catch (e) {
+    ffmpeg = null;
+    engine(`Das Bearbeitungsprogramm konnte nicht geladen werden: ${e.message || e}`, true);
+    throw e;
+  }
+  loadedOnce = true; engine('');   // räumt auch eine Fehlermeldung eines früheren, gescheiterten Starts weg
+}
+// Aborts running processing immediately; the next file starts a new instance
+function stopEngine() {
+  if (ffmpeg) { ffmpeg.terminate(); ffmpeg = null; }
+}
+
+async function run(args, onLine = null) {
+  logLines = []; onLogLine = onLine;
+  let code;
+  try { code = await ffmpeg.exec(args); } finally { onLogLine = null; }
+  return { code, log: logLines.join('\n') };
+}
+
+// ------------------------------------------------------------------ Analysis
+function probeInfo(log) {
+  const dur = /Duration: (\d+):(\d+):(\d+(?:\.\d+)?)/.exec(log);
+  const lines = log.split('\n');
+  const audioLine = lines.find(l => /Stream #.*: Audio: /.test(l));
+  const videoLine = lines.find(l => /Stream #.*: Video: /.test(l) && !/attached pic/.test(l));
+  const comment = /^\s*comment\s*:\s*(.+)$/m.exec(log);
+  let audio = null;
+  if (audioLine) {
+    const codec = /Audio: (\w+)/.exec(audioLine)[1];
+    const hz = /(\d+) Hz/.exec(audioLine);
+    const kbps = /(\d+) kb\/s/.exec(audioLine);
+    const mono = /\d+ Hz, (mono|1 channels)/.test(audioLine);
+    audio = { codec, sampleRate: hz ? +hz[1] : 44100, channels: mono ? 1 : 2, kbps: kbps ? +kbps[1] : 0 };
+  }
+  return {
+    duration: dur ? (+dur[1]) * 3600 + (+dur[2]) * 60 + parseFloat(dur[3]) : 0,
+    audio, hasVideo: !!videoLine, comment: comment ? comment[1].trim() : ''
+  };
+}
+const lastNumber = (re, log) => { const all = [...log.matchAll(re)]; return all.length ? parseFloat(all[all.length - 1][1]) : null; };
+
+function snapKbps(kbps, sr) {
+  const rates = sr >= 32000 ? MP3_RATES_V1 : MP3_RATES_V2;
+  const want = Math.max(kbps || 128, sr >= 32000 ? 64 : 32);
+  return rates.find(r => r >= want) || rates[rates.length - 1];
+}
+function audioArgs(ext, a) {
+  if (ext === 'mp3') return ['-c:a', 'libmp3lame', '-b:a', `${snapKbps(a.kbps, a.sampleRate)}k`, '-id3v2_version', '3'];
+  if (ext === 'wav') return ['-c:a', 'pcm_s16le'];
+  return ['-c:a', 'aac', '-b:a', `${Math.max(a.kbps || 128, 96)}k`];
+}
+
+// Filter graph: lead-in + optional noise under the audio + short tail.
+// Lead-in and tail are noise or, with "Kein Rauschen", digital silence. A lead-in of 0 s is left out
+// (a duration of 0 would mean "endless" for anoisesrc).
+function audioGraph(a, s, amp, input = '0:a:0') {
+  const sr = a.sampleRate, layout = a.channels === 1 ? 'mono' : 'stereo';
+  const noise = `aformat=sample_fmts=fltp,pan=${layout}|c0=c0${layout === 'stereo' ? '|c1=c0' : ''}`;
+  const pad = d => s.noise
+    ? `anoisesrc=c=white:a=${amp.toFixed(7)}:r=${sr}:d=${d},${noise}`
+    : `anullsrc=r=${sr}:cl=${layout},atrim=duration=${d},aformat=sample_fmts=fltp:channel_layouts=${layout}`;
+  const g = [
+    `[${input}]aresample=${sr},aformat=sample_fmts=fltp:channel_layouts=${layout}[src]`,
+    `${pad(0.1)}[tail]`,
+  ];
+  if (s.lead > 0) g.push(`${pad(s.lead)}[pre]`);
+  if (s.noise && s.underlay) {
+    g.push(`anoisesrc=c=white:a=${amp.toFixed(7)}:r=${sr},${noise}[bed]`);
+    g.push('[src][bed]amix=inputs=2:duration=first:normalize=0[body]');
+  } else g.push('[src]anull[body]');
+  g.push(s.lead > 0 ? '[pre][body][tail]concat=n=3:v=0:a=1[aout]' : '[body][tail]concat=n=2:v=0:a=1[aout]');
+  return g.join(';');
+}
+
+// Measures how much noise level the encoder swallows and compensates for it.
+// The result only depends on encoder settings and level, so it is measured once per combination.
+const calibrated = new Map();
+async function calibrate(ext, a, s) {
+  const base = Math.pow(10, s.level / 20);
+  if (ext === 'wav') return base;
+  const cext = VIDEO_EXT.includes(ext) ? 'm4a' : ext;
+  const key = [cext, a.sampleRate, a.channels, ...audioArgs(cext, a), s.level].join('|');
+  if (!calibrated.has(key)) calibrated.set(key, await measureCalibration(cext, a, s, base));
+  return calibrated.get(key);
+}
+async function measureCalibration(cext, a, s, base) {
+  const layout = a.channels === 1 ? 'mono' : 'stereo';
+  const pan = `pan=${layout}|c0=c0${layout === 'stereo' ? '|c1=c0' : ''}`;
+  await run(['-y', '-f', 'lavfi', '-i', `anoisesrc=c=white:a=${base.toFixed(7)}:r=${a.sampleRate}:d=2`,
+             '-af', `aformat=sample_fmts=fltp,${pan}`, ...audioArgs(cext, a), `kal.${cext}`]);
+  const { log } = await run(['-i', `kal.${cext}`, '-af', 'atrim=0.3:1.7,astats=metadata=0', '-f', 'null', '-']);
+  try { await ffmpeg.deleteFile(`kal.${cext}`); } catch {}
+  const measured = lastNumber(/RMS level dB: (-?[\d.]+|-inf)/g, log);
+  const target = s.level - 4.77;   // RMS of uniformly distributed noise with this peak level
+  if (measured === null || !isFinite(measured)) return base * Math.pow(10, 8 / 20);
+  const corr = Math.min(8, Math.max(0, target - measured));
+  return base * Math.pow(10, corr / 20);
+}
+
+async function verify(name, s) {
+  // Without noise there is no level to check, and silence in the lead-in is intended
+  if (!s.noise) return { leadDb: null, longestSilence: 0, ok: true };
+  // The level is measured from 0.1 s into the lead-in; a shorter lead-in has nothing to measure
+  const measureLead = s.lead >= 0.2;
+  let leadDb = null;
+  if (measureLead) {
+    const a = await run(['-i', name, '-vn', '-af', `atrim=0.1:${Math.max(0.15, s.lead - 0.05)},astats=metadata=0`, '-f', 'null', '-']);
+    leadDb = lastNumber(/RMS level dB: (-?[\d.]+)/g, a.log);
+  }
+  const b = await run(['-i', name, '-vn', '-af', `atrim=start=0.1,silencedetect=noise=${s.level - 20}dB:d=0.2`, '-f', 'null', '-']);
+  const silences = [...b.log.matchAll(/silence_duration: ([\d.]+)/g)].map(m => parseFloat(m[1]));
+  const longest = silences.length ? Math.max(...silences) : 0;
+  const ok = !measureLead || (leadDb !== null && leadDb >= s.level - 8);
+  return { leadDb, longestSilence: longest, ok };
+}
+
+// ------------------------------------------------------------------ Processing
+async function processEntry(entry, s) {
+  const { ext, ui } = entry;
+  ui.status('busy', 'Wartet auf das Bearbeitungsprogramm …');
+  await freshEngine();
+  const inName = `in.${ext}`, outName = `out.${ext}`;
+  await ffmpeg.writeFile(inName, new Uint8Array(await entry.file.arrayBuffer()));
+  try {
+    const info = probeInfo((await run(['-hide_banner', '-i', inName])).log);
+    if (!info.audio) { ui.status('bad', 'Keine Tonspur gefunden, Datei bleibt unverändert'); return; }
+    if (info.comment.startsWith(MARKER)) { ui.status('info', 'Bereits bearbeitet, Markierung gefunden'); return; }
+    if (VIDEO_EXT.includes(ext) && !info.hasVideo) { ui.status('bad', 'Kein Bild gefunden, bitte als Audiodatei speichern'); return; }
+
+    let amp = 0;
+    if (s.noise) {
+      ui.status('busy', 'Pegel wird abgestimmt …');
+      amp = await calibrate(ext, info.audio, s);
+    }
+    // The marker always starts with MARKER, also for a silent lead-in; only this prefix is checked
+    const marker = `${MARKER} ${Math.round(s.lead * 1000)}ms ${s.noise ? `${s.level}dBFS` : 'stille'}`;
+    const total = info.duration + s.lead + 0.1;
+    const onLine = line => {
+      const t = /time=(\d+):(\d+):(\d+(?:\.\d+)?)/.exec(line);
+      if (t && total) ui.progress(((+t[1]) * 3600 + (+t[2]) * 60 + parseFloat(t[3])) / total);
+    };
+    ui.status('busy', info.hasVideo ? 'Video wird bearbeitet, das kann etwas dauern …' : 'Wird bearbeitet …');
+    ui.progress(0);
+    let args;
+    if (info.hasVideo) {
+      args = ['-y', '-i', inName, '-filter_complex',
+        `[0:v:0]${s.lead > 0 ? `tpad=start_duration=${s.lead}:start_mode=clone` : 'null'}[v];${audioGraph(info.audio, s, amp)}`,
+        '-map', '[v]', '-map', '[aout]', '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '20', '-pix_fmt', 'yuv420p',
+        ...audioArgs(ext, info.audio), '-movflags', '+faststart', '-metadata', `comment=${marker}`, outName];
+    } else {
+      args = ['-y', '-i', inName, '-filter_complex', audioGraph(info.audio, s, amp), '-map', '[aout]',
+        ...audioArgs(ext, info.audio), '-metadata', `comment=${marker}`, outName];
+    }
+    const res = await run(args, onLine);
+    ui.progress(null);
+    if (res.code !== 0) {
+      const err = res.log.split('\n').filter(l => l.trim()).slice(-1)[0] || 'unbekannter Fehler';
+      ui.status('bad', `Fehler beim Bearbeiten: ${err}`); return;
+    }
+    ui.status('busy', 'Ergebnis wird geprüft …');
+    const check = await verify(outName, s);
+    const data = await ffmpeg.readFile(outName);
+    entry.result = new Blob([data.buffer], { type: MIME[ext] });
+    ui.done(entry, check, s, info.hasVideo);
+  } finally {
+    for (const n of [inName, outName]) { try { await ffmpeg.deleteFile(n); } catch {} }
+  }
+}
+
+// ------------------------------------------------------------------ Display
+const fmtSize = n => n > 1048576 ? `${(n / 1048576).toFixed(1).replace('.', ',')} MB` : `${Math.max(1, Math.round(n / 1024))} KB`;
+const fmtDb = v => `${Math.round(v)} dB`.replace('-', '−');
+const fmtSec = v => `${String(+v.toFixed(2)).replace('.', ',')} s`;
+const cssVar = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+
+// Waveform as bars, level on a log scale (−90..0 dB) so the quiet noise is visible
+function drawWave(canvas, data, leadSamples) {
+  const dpr = window.devicePixelRatio || 1, w = canvas.clientWidth, h = canvas.clientHeight;
+  if (!w) return;
+  canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
+  const g = canvas.getContext('2d'); g.scale(dpr, dpr); g.clearRect(0, 0, w, h);
+  const n = Math.max(40, Math.min(200, Math.floor(w / 5))), slot = w / n, per = data.length / n;
+  const added = cssVar('--added'), content = cssVar('--content');
+  for (let b = 0; b < n; b++) {
+    let peak = 0;
+    for (let i = Math.floor(b * per), e = Math.min(data.length, Math.floor((b + 1) * per)); i < e; i++) {
+      const v = Math.abs(data[i]); if (v > peak) peak = v;
+    }
+    const norm = Math.max(0, (20 * Math.log10(peak + 1e-9) + 90) / 90);
+    const bh = Math.max(h * 0.06, norm * h);
+    g.fillStyle = (b + 0.5) * per < leadSamples ? added : content;
+    g.fillRect(b * slot, (h - bh) / 2, Math.max(1, slot - 1), bh);
+  }
+}
+
+const svg = (body, { size = 20, cls = '', stroke = 2, filled = false } = {}) => {
+  const paint = filled ? 'fill="currentColor"'
+    : `fill="none" stroke="currentColor" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round"`;
+  return `<svg${cls ? ` class="${cls}"` : ''} width="${size}" height="${size}" viewBox="0 0 24 24" ${paint} aria-hidden="true">${body}</svg>`;
+};
+const ICON = {
+  chevron: svg('<path d="M9 6l6 6-6 6"/>', { size: 18, cls: 'chevron' }),
+  check: svg('<path d="M5 12.5l4.5 4.5L19 7.5"/>', { size: 16, stroke: 2.4 }),
+  warn: svg('<path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/>', { size: 16 }),
+  play: svg('<path d="M8 5v14l11-7z"/>', { filled: true }),
+  pause: svg('<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>', { filled: true }),
+};
+const fmtTime = t => { t = Math.max(0, Math.floor(t || 0)); return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`; };
+let playingMedia = null, rowCount = 0;
+
+function makeRow(entry) {
+  const el = document.createElement('article');
+  el.className = 'file';
+  el.innerHTML = `<button type="button" class="row-head" aria-expanded="false" disabled>${ICON.chevron}
+      <span class="row-title"><span class="name"></span><span class="meta"></span></span>
+      <span class="row-status"></span></button>
+    <div class="bar" hidden><i></i></div>
+    <div class="row-body" hidden></div>`;
+  el.querySelector('.name').textContent = entry.file.name;
+  el.querySelector('.meta').textContent = fmtSize(entry.file.size);
+  filesEl.appendChild(el);
+  const head = el.querySelector('.row-head'), st = el.querySelector('.row-status');
+  const bar = el.querySelector('.bar'), body = el.querySelector('.row-body');
+  body.id = `row-body-${++rowCount}`; head.setAttribute('aria-controls', body.id);
+  let open = false;
+  let url = null, media = null, canvas = null;
+  const setOpen = o => {
+    open = o; head.setAttribute('aria-expanded', String(o)); body.hidden = !o || head.disabled;
+    if (!body.hidden && canvas && canvas._wave) drawWave(canvas, canvas._wave.data, canvas._wave.lead);
+  };
+  head.addEventListener('click', () => setOpen(!open));
+  const setStatus = (cls, text, icon = '') => { st.className = `row-status ${cls}`; st.innerHTML = icon; st.append(text); };
+  const make = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text) n.textContent = text; return n; };
+
+  return {
+    status(cls, text) { setStatus(cls, text, cls === 'bad' ? ICON.warn : ''); },
+    // Expands the row as soon as a result is available
+    openWhenDone() { open = true; },
+    // Removes waveform, player and buttons of a previous run
+    reset() {
+      if (media) { media.pause(); if (playingMedia === media) playingMedia = null; media.removeAttribute('src'); media.load(); media = null; }
+      if (url) { URL.revokeObjectURL(url); url = null; }
+      canvas = null; body.innerHTML = ''; head.disabled = true; body.hidden = true; bar.hidden = true;
+    },
+    progress(p) {
+      bar.hidden = p === null;
+      if (p !== null) bar.firstElementChild.style.width = `${Math.round(Math.min(1, Math.max(0, p)) * 100)}%`;
+    },
+    async done(entry, check, s, isVideo) {
+      if (check.ok) setStatus('good', s.lead > 0 ? `Vorlauf ${fmtSec(s.lead)}${s.noise ? '' : ', Stille'}` : 'Ohne Vorlauf', ICON.check);
+      else setStatus('bad', 'Vorlauf zu leise', ICON.warn);
+
+      url = URL.createObjectURL(entry.result);
+      media = document.createElement(isVideo ? 'video' : 'audio');
+      media.preload = 'metadata'; media.playsInline = true; media.src = url;
+      if (isVideo) { media.className = 'preview'; body.append(media); }
+
+      canvas = make('canvas', 'wave');
+      canvas.setAttribute('role', 'img');
+      canvas.setAttribute('aria-label', s.lead > 0
+        ? `Wellenform: ${fmtSec(s.lead)} Vorlauf${s.noise ? '' : ' als Stille'}, danach der ursprüngliche Ton`
+        : 'Wellenform: der ursprüngliche Ton ohne Vorlauf');
+      canvas.hidden = true;
+      body.append(canvas);
+
+      const issues = [];
+      if (!check.ok) issues.push('Rauschen im Vorlauf zu leise, bitte Pegel erhöhen');
+      if (check.longestSilence > 0.2) issues.push(`Stille Stelle von ${fmtSec(check.longestSilence)} ohne Rauschen`);
+      if (issues.length) {
+        const ul = make('ul', 'issues');
+        issues.forEach(t => ul.append(make('li', '', t)));
+        body.append(ul);
+      }
+
+      const player = make('div', 'player');
+      const play = make('button', 'play');
+      play.type = 'button'; play.innerHTML = ICON.play; play.setAttribute('aria-label', 'Abspielen');
+      const time = make('span', 'time', '0:00 / 0:00');
+      const seek = make('input', 'seek');
+      seek.type = 'range'; seek.min = '0'; seek.max = '1000'; seek.value = '0'; seek.setAttribute('aria-label', 'Wiedergabeposition');
+      player.append(play, time, seek);
+      if (check.leadDb !== null) player.append(make('span', 'level-info', `Rauschen im Ergebnis ${fmtDb(check.leadDb)}`));
+      body.append(player);
+
+      const m = media;
+      let dragging = false;
+      const toggle = () => {
+        if (!m.paused) { m.pause(); return; }
+        if (playingMedia && playingMedia !== m) playingMedia.pause();
+        playingMedia = m;
+        m.play().catch(e => {
+          if (e.name === 'AbortError') return;   // durch schnelles Pausieren oder Wechseln abgebrochen
+          if (playingMedia === m) playingMedia = null;
+          play.disabled = true; seek.disabled = true;
+          time.textContent = 'Vorschau in diesem Browser nicht abspielbar, die Datei ist trotzdem fertig';
+        });
+      };
+      const showTime = () => {
+        time.textContent = `${fmtTime(m.currentTime)} / ${fmtTime(m.duration)}`;
+        if (!dragging) seek.value = m.duration ? String(Math.round(m.currentTime / m.duration * 1000)) : '0';
+      };
+      // While the slider is being dragged, do not let playback reset it
+      seek.addEventListener('pointerdown', () => { dragging = true; });
+      ['pointerup', 'pointercancel', 'change'].forEach(t => seek.addEventListener(t, () => { dragging = false; }));
+      play.addEventListener('click', toggle);
+      if (isVideo) m.addEventListener('click', toggle);
+      m.addEventListener('play', () => { play.innerHTML = ICON.pause; play.setAttribute('aria-label', 'Pause'); });
+      ['pause', 'ended'].forEach(t => m.addEventListener(t, () => { play.innerHTML = ICON.play; play.setAttribute('aria-label', 'Abspielen'); }));
+      ['timeupdate', 'loadedmetadata'].forEach(t => m.addEventListener(t, showTime));
+      seek.addEventListener('input', () => { if (m.duration) m.currentTime = seek.value / 1000 * m.duration; });
+
+      const actions = make('div', 'file-actions');
+      const btn = make('button', 'btn btn-flat', 'Diese Datei speichern');
+      btn.type = 'button';
+      btn.addEventListener('click', () => saveFile(savedName(entry.file.name), entry.result));
+      const copy = make('button', 'btn btn-stroked', 'Als data-URI kopieren');
+      copy.type = 'button';
+      const copied = make('span', 'note');
+      copied.setAttribute('role', 'status');
+      copy.addEventListener('click', async () => {
+        const uri = await toDataUri(entry.result);
+        const ok = await copyText(uri);
+        copied.textContent = ok
+          ? `Kopiert: ${uri.slice(0, uri.indexOf(','))}, ${fmtSize(uri.length)} Text`
+          : 'Kopieren nicht möglich, die data-URI wird stattdessen als Textdatei gespeichert.';
+        if (!ok) saveFile(savedName(entry.file.name).replace(/\.[^.]+$/, '') + '.txt', new Blob([uri], { type: 'text/plain' }));
+      });
+      actions.append(btn, copy, copied);
+      body.append(actions);
+
+      head.disabled = false;
+      setOpen(open || issues.length > 0);
+      $('zip').disabled = !entries.some(e => e.result);
+      const cv = canvas;
+      try {
+        const ctx = new OfflineAudioContext(1, 1, 44100);
+        const buf = await ctx.decodeAudioData(await entry.result.arrayBuffer());
+        if (canvas !== cv) return;   // reset or reprocessed in the meantime
+        cv.hidden = false;
+        cv._wave = { data: buf.getChannelData(0), lead: Math.round(s.lead * buf.sampleRate) };
+        if (!body.hidden) drawWave(cv, cv._wave.data, cv._wave.lead);
+      } catch { /* the waveform is optional */ }
+    }
+  };
+}
+
+// ------------------------------------------------------------------ Workflow
+// Custom number fields instead of type="number": depending on the locale, Firefox and Chrome drop the decimal comma there
+const NUM = { lead: { min: 0, max: 5, step: 0.25, def: 1 }, level: { min: -90, max: -40, step: 5, def: -70 } };
+function readNum(id) {
+  const v = parseFloat($(id).value.trim().replace(',', '.').replace('−', '-'));
+  return isFinite(v) ? v : null;
+}
+const clampNum = (id, v) => Math.min(NUM[id].max, Math.max(NUM[id].min, v));
+function stepNum(id, dir) {
+  const v = clampNum(id, (readNum(id) ?? NUM[id].def) + dir * NUM[id].step);
+  $(id).value = String(+v.toFixed(2)).replace('.', ',');
+  onNumInput(id);
+}
+function onNumInput(id) {
+  const bad = readNum(id) === null;
+  $(id).setAttribute('aria-invalid', String(bad));
+  $(id).closest('.fieldwrap').classList.toggle('invalid', bad);   // per Klasse statt :has(), das Firefox ESR 115 nicht kennt
+  updateRedo();
+}
+
+function settings() {
+  const noise = !$('nonoise').checked;
+  return {
+    lead: clampNum('lead', readNum('lead') ?? NUM.lead.def),
+    noise,
+    // Without noise, level and "under the audio" do not matter; that way changing them does not trigger a repeat
+    level: noise ? clampNum('level', readNum('level') ?? NUM.level.def) : null,
+    underlay: noise && $('underlay').checked,
+  };
+}
+function updateNoiseFields() {
+  const off = $('nonoise').checked;
+  $('level').disabled = off; $('underlay').disabled = off;
+  document.querySelectorAll('.step[data-for="level"]').forEach(b => { b.disabled = off; });
+  ['level', 'underlay'].forEach(id => $(id).closest('.field').classList.toggle('off', off));
+  $('lead-hint').textContent = `${off ? 'Stille' : 'Rauschen'} vor dem ersten Ton, in Sekunden`;
+}
+const sameSettings = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+
+// Queues a file with the given settings. If it is already waiting, it just takes over the new settings.
+function enqueue(entry, s) {
+  entry.s = s;
+  if (entry.pending) return;
+  entry.pending = true;
+  if (!entry.running) { entry.result = null; entry.ui.reset(); entry.ui.status('info', 'In der Warteschlange'); }
+  queue = queue.then(async () => {
+    entry.pending = false;
+    if (!entries.includes(entry)) return;   // removed with "Liste leeren" in the meantime
+    entry.running = true;
+    entry.result = null; entry.ui.reset();
+    $('zip').disabled = !entries.some(e => e.result);
+    try { await processEntry(entry, entry.s); } finally { entry.running = false; updateBatch(); }
+  }).catch(e => {
+    entry.ui.progress(null);
+    entry.ui.status('bad', `Fehler: ${e && e.message ? e.message : e}`);
+  });
+  updateBatch();
+}
+
+// Overall progress in the list header while files are still waiting or running
+function updateBatch() {
+  const work = entries.filter(e => e.s), open = work.filter(e => e.pending || e.running).length;
+  $('batch').hidden = !open;
+  if (open) $('batch-text').textContent = `${work.length - open} von ${work.length} fertig`;
+}
+
+function updateRedo() {
+  const s = settings();
+  $('redo').hidden = !entries.some(e => e.s && !sameSettings(e.s, s));
+}
+
+function addFiles(list) {
+  if (location.protocol === 'file:') {
+    engine('Dieses Werkzeug muss über einen Webserver geöffnet werden, nicht als Datei. Siehe README.md.', true);
+    return;
+  }
+  const s = settings();
+  for (const file of list) {
+    const ext = (file.name.split('.').pop() || '').toLowerCase();
+    const entry = { file, ext, result: null };
+    entry.ui = makeRow(entry);
+    entries.push(entry);
+    if (![...AUDIO_EXT, ...VIDEO_EXT].includes(ext)) { entry.ui.status('bad', 'Format wird nicht unterstützt (MP3, WAV, M4A, MP4, M4V, MOV)'); continue; }
+    if (!entries.some(e => e.s)) entry.ui.openWhenDone();   // the first processable file in the list is expanded
+    enqueue(entry, s);
+  }
+  $('actions').hidden = !entries.length;
+  $('list-title').textContent = entries.length === 1 ? '1 Datei' : `${entries.length} Dateien`;
+  updateRedo();
+  updateSuffixHint();
+}
+
+// File name suffix: applies to all files when saving and goes before the extension.
+// Characters that Windows or macOS do not allow in file names are dropped.
+const cleanSuffix = () => $('suffix').value.replace(/[\\/:*?"<>|\u0000-\u001f]/g, '').trim();
+function savedName(name) {
+  const suffix = cleanSuffix(), dot = name.lastIndexOf('.');
+  if (!suffix) return name;
+  return dot > 0 ? name.slice(0, dot) + suffix + name.slice(dot) : name + suffix;
+}
+function updateSuffixHint() {
+  const example = entries.length ? entries[0].file.name : 'Aufgabe.mp3';
+  $('suffix-hint').textContent = cleanSuffix() ? `Gespeichert als ${savedName(example)}` : 'Leer lassen, um die Originalnamen zu behalten';
+}
+
+function note(text) { noteEl.textContent = text; }
+// Files with the same name (e.g. from two folders) would overwrite each other when unpacking: "a.mp3", "a (2).mp3"
+function uniqueNames(files) {
+  const used = new Set();
+  return files.map(({ name, blob }) => {
+    const dot = name.lastIndexOf('.'), stem = dot > 0 ? name.slice(0, dot) : name, ext = dot > 0 ? name.slice(dot) : '';
+    let unique = name;
+    for (let n = 2; used.has(unique.toLowerCase()); n++) unique = `${stem} (${n})${ext}`;
+    used.add(unique.toLowerCase());
+    return { name: unique, blob };
+  });
+}
+function toDataUri(blob) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(r.result);
+    r.onerror = () => reject(r.error);
+    r.readAsDataURL(blob);
+  });
+}
+async function copyText(text) {
+  // The clipboard API is only available over https or on localhost, otherwise use the older approach
+  if (navigator.clipboard && window.isSecureContext) {
+    try { await navigator.clipboard.writeText(text); return true; } catch { /* continue with fallback */ }
+  }
+  const ta = document.createElement('textarea');
+  ta.value = text; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.opacity = '0';
+  document.body.appendChild(ta); ta.select();
+  let ok = false;
+  try { ok = document.execCommand('copy'); } catch { ok = false; }
+  ta.remove();
+  return ok;
+}
+function saveFile(name, blob) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+}
+
+$('zip').addEventListener('click', async () => {
+  const done = entries.filter(e => e.result);
+  if (!done.length) return;
+  note('ZIP wird erstellt …');
+  try {
+    saveFile('rauschen-werkzeug.zip', await zipStore(uniqueNames(done.map(e => ({ name: savedName(e.file.name), blob: e.result })))));
+    note('');
+  } catch (e) {
+    note(`ZIP konnte nicht erstellt werden: ${e.message || e}`);
+  }
+});
+$('redo').addEventListener('click', () => {
+  const s = settings();
+  entries.filter(e => e.s && !sameSettings(e.s, s)).forEach(e => enqueue(e, s));
+  $('zip').disabled = !entries.some(e => e.result);
+  updateRedo();
+});
+$('underlay').addEventListener('input', updateRedo);
+$('nonoise').addEventListener('input', () => { updateNoiseFields(); updateRedo(); });
+updateNoiseFields();   // in case the browser restores the checkbox on reload
+// Remember the suffix for the next visit so it does not have to be typed in every time
+try { $('suffix').value = localStorage.getItem('rauschen-werkzeug-suffix') || ''; } catch { /* storage blocked */ }
+updateSuffixHint();
+$('suffix').addEventListener('input', () => {
+  updateSuffixHint();
+  try { localStorage.setItem('rauschen-werkzeug-suffix', $('suffix').value); } catch { /* storage blocked */ }
+});
+Object.keys(NUM).forEach(id => {
+  $(id).addEventListener('input', () => onNumInput(id));
+  $(id).addEventListener('keydown', e => {
+    if (e.key === 'ArrowUp' || e.key === 'ArrowDown') { e.preventDefault(); stepNum(id, e.key === 'ArrowUp' ? 1 : -1); }
+  });
+});
+document.querySelectorAll('.step').forEach(b => b.addEventListener('click', () => stepNum(b.dataset.for, +b.dataset.dir)));
+$('clear').addEventListener('click', () => {
+  if (entries.some(e => e.running)) stopEngine();   // the queue skips waiting files by itself
+  entries.forEach(e => { e.result = null; e.ui.reset(); });
+  entries = []; filesEl.innerHTML = ''; $('actions').hidden = true; $('zip').disabled = true; $('redo').hidden = true; $('batch').hidden = true; note('');
+  updateSuffixHint();
+});
+
+const drop = $('drop');
+$('picker').addEventListener('change', e => { addFiles([...e.target.files]); e.target.value = ''; });
+['dragenter', 'dragover'].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.add('over'); }));
+['dragleave', 'drop'].forEach(t => drop.addEventListener(t, () => drop.classList.remove('over')));
+drop.addEventListener('drop', e => { e.preventDefault(); addFiles([...e.dataTransfer.files]); });
+
+let resizeTimer;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => document.querySelectorAll('canvas.wave').forEach(c => c._wave && drawWave(c, c._wave.data, c._wave.lead)), 150);
+});
+</script>
+</body>
+</html>

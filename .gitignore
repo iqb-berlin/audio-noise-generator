@@ -1,0 +1,18 @@
+# Systemdateien (macOS, Windows)
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Lokale Tests und Testdateien gehören nicht ins Repository
+testdateien/
+tests/
+
+# Erzeugte Dateien: Offline-Fassung und Quellcode-Archiv werden als Release-Assets verteilt
+maintenance/build/
+
+# Werkzeug- und Editoreinstellungen, Python-Zwischendateien
+.claude/
+.idea/
+.vscode/
+__pycache__/
+*.pyc

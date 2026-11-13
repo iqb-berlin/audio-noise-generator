@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<!-- Generated from HELP.md by maintenance/build_help.py. Do not edit by hand. -->
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Hilfe – Rauschen-Werkzeug</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎧</text></svg>">
+<style>
+  @font-face { font-family: "Atkinson Hyperlegible"; font-weight: 400; font-display: swap;
+    src: url("lib/fonts/atkinson-hyperlegible-latin-400-normal.woff2") format("woff2"); }
+  @font-face { font-family: "Atkinson Hyperlegible"; font-weight: 700; font-display: swap;
+    src: url("lib/fonts/atkinson-hyperlegible-latin-700-normal.woff2") format("woff2"); }
+  :root {
+    --bg: #F5F3EE; --surface: #FFFFFF; --surface-2: #F7F8F7; --hover: #F2F4F4; --ink: #1F2328; --muted: #57606A;
+    --card-line: #DFE3DF; --list-line: #D8DEE4; --field-line: #CCD3D0; --field-div: #E3E7E4; --btn-line: #D0D7DE; --drop-line: #C4CBD1;
+    --primary: #006064; --primary-hover: #004447; --on-primary: #FFFFFF; --primary-ring: rgba(0, 96, 100, 0.15);
+    --added: #B8860B; --content: #2F6F6B; --added-wash: rgba(184, 134, 11, 0.12);
+    --warn: #B71C1C; --focus: #005FCC; color-scheme: light;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #12181B; --surface: #1A2226; --surface-2: #20292D; --hover: #232D31; --ink: #E3E9E6; --muted: #9DAAA6;
+      --card-line: #2E3A3E; --list-line: #2E3A3E; --field-line: #3B494E; --field-div: #2E3A3E; --btn-line: #3B494E; --drop-line: #46565B;
+      --primary: #5FBDC0; --primary-hover: #7FD0D2; --on-primary: #0B1416; --primary-ring: rgba(95, 189, 192, 0.25);
+      --added: #DDB64C; --content: #6CC0B5; --added-wash: rgba(221, 182, 76, 0.16);
+      --warn: #E58474; --focus: #7DB3F0; color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #12181B; --surface: #1A2226; --surface-2: #20292D; --hover: #232D31; --ink: #E3E9E6; --muted: #9DAAA6;
+    --card-line: #2E3A3E; --list-line: #2E3A3E; --field-line: #3B494E; --field-div: #2E3A3E; --btn-line: #3B494E; --drop-line: #46565B;
+    --primary: #5FBDC0; --primary-hover: #7FD0D2; --on-primary: #0B1416; --primary-ring: rgba(95, 189, 192, 0.25);
+    --added: #DDB64C; --content: #6CC0B5; --added-wash: rgba(221, 182, 76, 0.16);
+    --warn: #E58474; --focus: #7DB3F0; color-scheme: dark;
+  }
+  *, *::before, *::after { box-sizing: inherit; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+    font-family: "Atkinson Hyperlegible", "Segoe UI", system-ui, -apple-system, sans-serif; font-size: 1rem; line-height: 1.55; }
+  a { color: var(--primary); }
+  a:focus-visible, summary:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; border-radius: 2px; }
+
+  .layout { max-width: 1120px; margin: 0 auto; padding: 32px 20px 64px; display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 48px; }
+  .page-head { grid-column: 1 / -1; display: flex; flex-direction: column; align-items: flex-start; gap: 16px; }
+  .page-head h1 { margin: 0; font-size: 1.875rem; line-height: 2.375rem; letter-spacing: -0.01em; }
+  .back { display: inline-flex; align-items: center; gap: 6px; height: 38px; padding: 0 14px 0 10px; border: 1px solid var(--btn-line);
+    border-radius: 6px; background: var(--surface); color: var(--ink); font-size: 0.875rem; font-weight: 700; text-decoration: none; }
+  .back:hover { background: var(--hover); }
+
+  /* Floating table of contents next to the text */
+  .toc { position: sticky; top: 24px; align-self: start; max-height: calc(100vh - 48px); overflow-y: auto;
+    padding: 16px 12px; background: var(--surface); border: 1px solid var(--card-line); border-radius: 12px; font-size: 0.875rem; }
+  .toc summary { display: none; }
+  .toc ul { list-style: none; margin: 0; padding: 0; }
+  .toc ul ul { margin: 2px 0 6px 10px; padding-left: 8px; border-left: 1px solid var(--card-line); }
+  .toc a { display: block; padding: 4px 8px; border-radius: 6px; color: var(--ink); text-decoration: none; line-height: 1.3; }
+  .toc ul ul a { color: var(--muted); }
+  .toc a:hover { background: var(--hover); color: var(--ink); }
+  .toc a.active { background: var(--primary-ring); color: var(--primary); font-weight: 700; }
+
+  .content { min-width: 0; max-width: 760px; }
+  .content > :first-child { margin-top: 0; }
+  .content h2 { margin: 2.5rem 0 0.6rem; padding-bottom: 0.3rem; font-size: 1.375rem; border-bottom: 1px solid var(--card-line); }
+  .content h3 { margin: 1.75rem 0 0.4rem; font-size: 1.0625rem; }
+  .content [id] { scroll-margin-top: 20px; }
+  .content ol, .content ul { padding-left: 1.4rem; }
+  .content li + li { margin-top: 0.3rem; }
+  .content code { font-size: 0.875em; padding: 0.05em 0.3em; border-radius: 4px; background: var(--surface-2); border: 1px solid var(--card-line); }
+  .content blockquote { margin: 1rem 0; padding: 0.7rem 1rem; border-radius: 8px; background: var(--added-wash); }
+  .content blockquote p { margin: 0; }
+  .table-box { overflow-x: auto; margin: 0.75rem 0; }
+  /* separate instead of collapse, plus border-box: otherwise the borders overhang by 1 px and cause a scrollbar */
+  .content table { box-sizing: border-box; border-collapse: separate; border-spacing: 0; width: 100%; font-size: 0.9rem;
+    border-top: 1px solid var(--card-line); border-left: 1px solid var(--card-line); }
+  .content th, .content td { text-align: left; vertical-align: top; padding: 7px 10px;
+    border-right: 1px solid var(--card-line); border-bottom: 1px solid var(--card-line); background: var(--surface); }
+  .content th { background: var(--surface-2); }
+
+  /* Narrow screens: table of contents as a collapsible menu above the text */
+  @media (max-width: 860px) {
+    .layout { grid-template-columns: minmax(0, 1fr); gap: 24px; padding-top: 24px; }
+    .toc { position: static; max-height: none; padding: 0; }
+    .toc summary { display: block; padding: 12px 16px; font-weight: 700; cursor: pointer; }
+    .toc[open] summary { border-bottom: 1px solid var(--card-line); }
+    .toc > ul { padding: 8px; }
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+  <header class="page-head">
+    <a class="back" id="back" href="index.html">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+      Zurück zum Werkzeug
+    </a>
+    <h1>Hilfe zum Rauschen-Werkzeug</h1>
+  </header>
+  <nav aria-label="Inhalt der Hilfe">
+    <details class="toc" id="toc" open>
+      <summary>Inhalt</summary>
+      <ul><li><a href="#erste-schritte">Erste Schritte</a></li><li><a href="#einstellungen">Einstellungen</a><ul><li><a href="#vorlauf">Vorlauf</a></li><li><a href="#rauschpegel">Rauschpegel</a></li><li><a href="#rauschen-unter-dem-ton">Rauschen unter dem Ton</a></li><li><a href="#ohne-rauschen">Ohne Rauschen</a></li><li><a href="#zusatz-im-dateinamen">Zusatz im Dateinamen</a></li></ul></li><li><a href="#ablagefeld">Ablagefeld</a></li><li><a href="#dateiliste">Dateiliste</a><ul><li><a href="#kopfzeile-der-liste">Kopfzeile der Liste</a></li><li><a href="#mit-neuen-einstellungen-wiederholen">Mit neuen Einstellungen wiederholen</a></li><li><a href="#liste-leeren">Liste leeren</a></li><li><a href="#alle-speichern">Alle speichern</a></li></ul></li><li><a href="#eine-datei-in-der-liste">Eine Datei in der Liste</a><ul><li><a href="#zeilenkopf-und-statusmeldungen">Zeilenkopf und Statusmeldungen</a></li><li><a href="#wellenform">Wellenform</a></li><li><a href="#hinweise-aus-der-prüfung">Hinweise aus der Prüfung</a></li><li><a href="#player">Player</a></li><li><a href="#diese-datei-speichern">Diese Datei speichern</a></li><li><a href="#als-data-uri-kopieren">Als data-URI kopieren</a></li></ul></li><li><a href="#aufklappbereiche-am-seitenende">Aufklappbereiche am Seitenende</a></li><li><a href="#bedienung-mit-der-tastatur">Bedienung mit der Tastatur</a></li><li><a href="#meldungen-unter-dem-ablagefeld">Meldungen unter dem Ablagefeld</a></li><li><a href="#häufige-fragen">Häufige Fragen</a></li><li><a href="#glossar">Glossar</a></li><li><a href="#siehe-auch">Siehe auch</a></li></ul>
+    </details>
+  </nav>
+  <main class="content">
+<blockquote><p><strong>Kurz gesagt:</strong> Dateien in das Feld ziehen, warten, bis bei jeder Datei ein Häkchen steht, und dann „Alle speichern“ klicken. Die Voreinstellungen passen für fast alle Fälle.</p></blockquote>
+<p>Das Rauschen-Werkzeug ergänzt Audios und Videos am Anfang um eine kurze, unhörbar leise Rauschspur, den <strong><a href="#glossar">Vorlauf</a></strong>. USB-C-Adapter mit eigenem Audio-Chip brauchen nach einer Pause einen Moment zum Aufwachen und verschlucken sonst den Anfang. Das Rauschen weckt sie, bevor der eigentliche Ton beginnt.</p>
+<p>Diese Seite erklärt jedes Bedienelement der Reihe nach, so wie es auf dem Bildschirm erscheint.</p>
+<h2 id="erste-schritte">Erste Schritte</h2>
+<ol><li>Die Seite in Edge, Chrome oder Firefox öffnen.</li><li>Dateien in das <a href="#ablagefeld">Ablagefeld</a> ziehen oder dort auf <strong>auswählen</strong> klicken.</li><li>Warten. Oben in der Liste steht, wie viele Dateien schon fertig sind. Beim ersten Mal lädt der Browser zusätzlich das Bearbeitungsprogramm (ca. 32 MB).</li><li>Bei jeder Datei steht danach rechts <strong>✓ Vorlauf 1 s</strong>.</li><li><a href="#alle-speichern">Alle speichern</a> klicken, oder einzelne Dateien über <a href="#diese-datei-speichern">Diese Datei speichern</a>.</li></ol>
+<p>Die Dateien werden <strong>nur in diesem Browser</strong> bearbeitet. Es wird nichts hochgeladen.</p>
+<h2 id="einstellungen">Einstellungen</h2>
+<p>Die Karte oben auf der Seite. Rechts darüber führt der Knopf <strong>Hilfe</strong> zu dieser Seite. „Zurück zum Werkzeug“ führt wieder zurück, die Dateiliste bleibt dabei erhalten.</p>
+<p>Die Einstellungen gelten für alle Dateien, die <strong>danach</strong> hineingezogen werden. Wer sie für bereits bearbeitete Dateien ändert, nutzt <a href="#mit-neuen-einstellungen-wiederholen">Mit neuen Einstellungen wiederholen</a>.</p>
+<h3 id="vorlauf">Vorlauf</h3>
+<p>Wie lange das Rauschen vor dem ersten Ton dauert, in Sekunden.</p>
+<div class="table-box"><table><tbody><tr><td>Voreinstellung</td><td>1 s</td></tr><tr><td>Bereich</td><td>0 bis 5 s</td></tr><tr><td>Schritte mit −/+</td><td>0,25 s</td></tr></tbody></table></div>
+<ul><li><strong>Eintippen:</strong> Komma und Punkt funktionieren beide (<code>1,5</code> und <code>1.5</code>).</li><li><strong>−</strong> und <strong>+</strong> neben dem Feld oder die Pfeiltasten ↑/↓ ändern den Wert schrittweise.</li><li>Werte außerhalb des Bereichs werden auf die Grenze gesetzt. <code>10</code> wird also zu 5 s.</li><li>Steht etwas im Feld, das keine Zahl ist, wird der Rahmen <strong>rot</strong>. Gerechnet wird dann mit der Voreinstellung.</li><li>Ist <a href="#ohne-rauschen">Ohne Rauschen</a> angekreuzt, heißt der Hinweis darunter „Stille vor dem ersten Ton“.</li><li><strong>0 s</strong> setzt keinen Vorlauf, der Ton beginnt sofort. Mit <a href="#rauschen-unter-dem-ton">Rauschen unter dem Ton</a> liegt das Rauschen dann nur unter dem Ton, sonst bekommt die Datei nur den kurzen Nachlauf von 0,1 s und die Markierung. Die Zeile zeigt danach <strong>✓ Ohne Vorlauf</strong>.</li></ul>
+<p><strong>Empfehlung:</strong> 1 s reicht für die meisten Adapter. Wird der Anfang trotzdem verschluckt, auf 1,5 oder 2 s erhöhen.</p>
+<h3 id="rauschpegel">Rauschpegel</h3>
+<p>Wie laut das Rauschen ist, in <a href="#glossar">dBFS</a>. Je niedriger die Zahl, desto leiser.</p>
+<div class="table-box"><table><tbody><tr><td>Voreinstellung</td><td>−70 dBFS</td></tr><tr><td>Bereich</td><td>−90 bis −40 dBFS</td></tr><tr><td>Schritte mit −/+</td><td>5 dB</td></tr></tbody></table></div>
+<ul><li>Der Wert ist der <strong>Spitzenpegel</strong>. In der Datei kommt im Mittel etwa 5 dB weniger an, deshalb steht im <a href="#player">Player</a> bei −70 die Angabe „Rauschen im Ergebnis −75 dB“.</li><li>Das Werkzeug gleicht aus, wenn MP3 oder AAC beim Komprimieren Rauschen „verschluckt“. Der Pegel im Ergebnis ist bei allen Formaten gleich.</li><li>Bei <a href="#ohne-rauschen">Ohne Rauschen</a> ist das Feld ausgegraut.</li></ul>
+<p><strong>Empfehlung:</strong> −70 nicht ändern. Erst wenn bei einer Datei <a href="#hinweise-aus-der-prüfung">Vorlauf zu leise</a> steht oder ein Adapter trotzdem nicht aufwacht, auf −65 oder −60 erhöhen. Ab etwa −40 ist das Rauschen hörbar.</p>
+<h3 id="rauschen-unter-dem-ton">Rauschen unter dem Ton</h3>
+<p>Kästchen <strong>„Auch unter den Ton legen“</strong>. Voreinstellung: angekreuzt.</p>
+<ul><li><strong>Angekreuzt:</strong> Das Rauschen läuft nach dem Vorlauf leise unter dem ganzen Ton weiter. So schlafen Adapter auch in Sprechpausen nicht ein.</li><li><strong>Nicht angekreuzt:</strong> Rauschen nur im Vorlauf und in einem kurzen Nachlauf von 0,1 s am Ende.</li><li>Bei <a href="#ohne-rauschen">Ohne Rauschen</a> ist das Kästchen ausgegraut.</li></ul>
+<h3 id="ohne-rauschen">Ohne Rauschen</h3>
+<p>Kästchen <strong>„Kein Rauschen, nur Stille“</strong>. Voreinstellung: nicht angekreuzt.</p>
+<ul><li>Der Vorlauf besteht dann aus <strong>reiner Stille</strong> statt aus Rauschen. Die Datei wird nur am Anfang länger.</li><li><a href="#rauschpegel">Rauschpegel</a> und <a href="#rauschen-unter-dem-ton">Rauschen unter dem Ton</a> sind dann ohne Wirkung und ausgegraut.</li><li>Die Zeile zeigt danach <strong>✓ Vorlauf 1 s, Stille</strong>.</li></ul>
+<blockquote><p><strong>Achtung:</strong> Stille hilft <strong>nicht</strong> gegen Adapter, die den Anfang verschlucken. Genau dafür ist das Rauschen da. Diese Option nur nutzen, wenn ausdrücklich eine stille Pause vor dem Ton gewünscht ist.</p></blockquote>
+<h3 id="zusatz-im-dateinamen">Zusatz im Dateinamen</h3>
+<p>Ein Text, der beim Speichern an <strong>alle</strong> Dateinamen angehängt wird, vor der Endung.</p>
+<div class="table-box"><table><thead><tr><th>Zusatz</th><th>Original</th><th>gespeichert als</th></tr></thead><tbody><tr><td><em>(leer)</em></td><td><code>Aufgabe_01.mp3</code></td><td><code>Aufgabe_01.mp3</code></td></tr><tr><td><code>_vorlauf</code></td><td><code>Aufgabe_01.mp3</code></td><td><code>Aufgabe_01_vorlauf.mp3</code></td></tr><tr><td><code>-neu</code></td><td><code>Einleitung.final.wav</code></td><td><code>Einleitung.final-neu.wav</code></td></tr></tbody></table></div>
+<ul><li>Unter dem Feld steht sofort, wie die erste Datei der Liste heißen wird.</li><li><strong>Leer lassen</strong>, wenn die bearbeiteten Dateien die Originale ersetzen sollen.</li><li>Gilt für <a href="#diese-datei-speichern">Diese Datei speichern</a>, für die Dateien <strong>in</strong> der ZIP von <a href="#alle-speichern">Alle speichern</a> und für die Ersatz-Textdatei bei <a href="#als-data-uri-kopieren">Als data-URI kopieren</a>.</li><li>Zeichen, die Windows oder macOS in Dateinamen nicht erlauben (<code>\ / : * ? &quot; &lt; &gt; |</code>), werden weggelassen.</li><li>Der Zusatz betrifft nur den Namen. Wer ihn nach der Bearbeitung ändert, muss nichts neu bearbeiten.</li><li>Der Browser <strong>merkt sich</strong> den Zusatz für den nächsten Besuch. Wer das Feld leert, löscht ihn.</li></ul>
+<h2 id="ablagefeld">Ablagefeld</h2>
+<p>Das große Feld mit dem Pfeilsymbol: <strong>„Dateien hierher ziehen oder auswählen“</strong>.</p>
+<ul><li><strong>Hineinziehen:</strong> Dateien aus dem Explorer bzw. Finder auf das Feld ziehen. Der Rahmen färbt sich, solange man darüber ist.</li><li><strong>Auswählen:</strong> auf das Feld klicken, dann öffnet sich die Dateiauswahl.</li><li>Mehrere Dateien auf einmal sind möglich. Sie werden <strong>nacheinander</strong> bearbeitet.</li><li><strong>Unterstützte Formate:</strong> MP3, WAV, M4A sowie Videos als MP4, M4V und MOV.</li><li>Andere Dateien erscheinen trotzdem in der Liste, aber mit der Meldung „Format wird nicht unterstützt“.</li><li>Neue Dateien kommen jeweils unten an die Liste. Was schon drin ist, bleibt erhalten.</li></ul>
+<p>Unter dem Feld erscheinen bei Bedarf <a href="#meldungen-unter-dem-ablagefeld">Meldungen zum Bearbeitungsprogramm</a>.</p>
+<h2 id="dateiliste">Dateiliste</h2>
+<p>Erscheint, sobald die erste Datei hineingezogen wurde.</p>
+<h3 id="kopfzeile-der-liste">Kopfzeile der Liste</h3>
+<div class="table-box"><table><thead><tr><th>Element</th><th>Bedeutung</th></tr></thead><tbody><tr><td><strong>„3 Dateien“</strong></td><td>Anzahl der Dateien in der Liste, auch die nicht unterstützten</td></tr><tr><td><strong>◌ „1 von 3 fertig“</strong></td><td>Fortschritt, solange noch Dateien warten oder bearbeitet werden. Verschwindet, wenn alles durch ist.</td></tr><tr><td><strong>Ocker</strong> ▬ ergänzter Vorlauf</td><td>Farbe des neuen Vorlaufs in der <a href="#wellenform">Wellenform</a></td></tr><tr><td><strong>Petrol</strong> ▬ ursprünglicher Ton</td><td>Farbe des ursprünglichen Tons in der <a href="#wellenform">Wellenform</a></td></tr><tr><td><strong>„ZIP wird erstellt …“</strong></td><td>erscheint kurz beim <a href="#alle-speichern">Speichern als ZIP</a></td></tr><tr><td><strong>ZIP konnte nicht erstellt werden: …</strong></td><td>meist ist die ZIP größer als 4 GB. Die Dateien einzeln speichern.</td></tr></tbody></table></div>
+<p>Rechts stehen die drei Knöpfe, die folgen.</p>
+<h3 id="mit-neuen-einstellungen-wiederholen">Mit neuen Einstellungen wiederholen</h3>
+<p>Erscheint <strong>nur</strong>, wenn <a href="#vorlauf">Vorlauf</a>, <a href="#rauschpegel">Rauschpegel</a>, <a href="#rauschen-unter-dem-ton">Rauschen unter dem Ton</a> oder <a href="#ohne-rauschen">Ohne Rauschen</a> nicht mehr zu den Einstellungen passen, mit denen die Dateien bearbeitet wurden.</p>
+<ul><li>Ein Klick bearbeitet alle betroffenen Dateien neu, mit den aktuellen Einstellungen. Man muss sie nicht noch einmal auswählen.</li><li>Wer die alten Werte wieder einstellt, lässt den Knopf verschwinden.</li><li>Eine Datei, die gerade bearbeitet wird, läuft erst zu Ende und kommt dann noch einmal dran.</li><li>Der <a href="#zusatz-im-dateinamen">Zusatz im Dateinamen</a> löst diesen Knopf nicht aus, weil er nur den Namen betrifft.</li></ul>
+<h3 id="liste-leeren">Liste leeren</h3>
+<p>Entfernt alle Dateien aus der Liste und bricht eine laufende Bearbeitung sofort ab.</p>
+<blockquote><p><strong>Achtung:</strong> Noch nicht gespeicherte Ergebnisse gehen dabei verloren. Die Originaldateien auf dem Rechner bleiben immer unverändert.</p></blockquote>
+<h3 id="alle-speichern">Alle speichern</h3>
+<p>Speichert alle <strong>fertigen</strong> Dateien zusammen als <strong><code>rauschen-werkzeug.zip</code></strong> im Download-Ordner.</p>
+<ul><li>Ist ausgegraut, solange noch keine Datei fertig ist.</li><li>Dateien mit Fehlermeldung oder „Bereits bearbeitet“ sind nicht in der ZIP, weil es von ihnen kein neues Ergebnis gibt.</li><li>Die Dateien in der ZIP tragen ihren Originalnamen, gegebenenfalls mit <a href="#zusatz-im-dateinamen">Zusatz</a>.</li><li>Haben zwei Dateien denselben Namen, etwa aus zwei Ordnern, bekommt die zweite einen Zusatz wie <code>Aufgabe (2).mp3</code>. So überschreiben sie sich beim Entpacken nicht.</li></ul>
+<h2 id="eine-datei-in-der-liste">Eine Datei in der Liste</h2>
+<p>Jede Datei hat eine eigene Zeile. Die erste bearbeitbare Datei ist aufgeklappt, die anderen lassen sich über den Zeilenkopf öffnen.</p>
+<h3 id="zeilenkopf-und-statusmeldungen">Zeilenkopf und Statusmeldungen</h3>
+<p>Der Zeilenkopf zeigt links einen <strong>Pfeil</strong> (› zu, ⌄ offen), dann <strong>Dateiname</strong> und <strong>Größe</strong> und rechts den <strong>Status</strong>. Ein Klick auf die Zeile klappt sie auf oder zu. Das geht erst, wenn die Datei fertig ist.</p>
+<p>Während der Bearbeitung läuft unter dem Zeilenkopf ein dünner <strong>Fortschrittsbalken</strong>.</p>
+<div class="table-box"><table><thead><tr><th>Status</th><th>Bedeutung</th><th>Was tun</th></tr></thead><tbody><tr><td>In der Warteschlange</td><td>wartet, bis die Dateien davor fertig sind</td><td>nichts</td></tr><tr><td>Wartet auf das Bearbeitungsprogramm …</td><td>das Programm startet, beim ersten Mal wird es geladen</td><td>nichts</td></tr><tr><td>Pegel wird abgestimmt …</td><td>misst, wie viel Rauschen das Format schluckt</td><td>nichts</td></tr><tr><td>Wird bearbeitet …</td><td>Rauschen wird hinzugefügt, Datei neu erzeugt</td><td>nichts</td></tr><tr><td>Video wird bearbeitet, das kann etwas dauern …</td><td>wie oben, das Bild wird zusätzlich neu kodiert</td><td>Geduld, etwa so lange wie das Video</td></tr><tr><td>Ergebnis wird geprüft …</td><td>das Ergebnis wird nachgemessen</td><td>nichts</td></tr><tr><td><strong>✓ Vorlauf 1 s</strong></td><td>fertig und geprüft</td><td>speichern</td></tr><tr><td><strong>✓ Vorlauf 1 s, Stille</strong></td><td>fertig, Vorlauf als Stille (<a href="#ohne-rauschen">Ohne Rauschen</a>)</td><td>speichern</td></tr><tr><td><strong>✓ Ohne Vorlauf</strong></td><td>fertig, <a href="#vorlauf">Vorlauf</a> auf 0 s gestellt</td><td>speichern</td></tr><tr><td>⚠ <strong>Vorlauf zu leise</strong></td><td>fertig, aber das Rauschen kommt zu leise an</td><td><a href="#rauschpegel">Rauschpegel</a> erhöhen und <a href="#mit-neuen-einstellungen-wiederholen">wiederholen</a></td></tr><tr><td>Bereits bearbeitet, Markierung gefunden</td><td>die Datei hat schon einen Vorlauf von diesem Werkzeug oder vom Skript</td><td>nichts, das Original ist schon fertig</td></tr><tr><td>⚠ Keine Tonspur gefunden, Datei bleibt unverändert</td><td>die Datei enthält keinen Ton</td><td>Datei prüfen</td></tr><tr><td>⚠ Kein Bild gefunden, bitte als Audiodatei speichern</td><td>eine <code>.mp4</code> oder <code>.mov</code> ohne Bild</td><td>als <code>.m4a</code> speichern und erneut hineinziehen</td></tr><tr><td>⚠ Format wird nicht unterstützt (MP3, WAV, M4A, MP4, M4V, MOV)</td><td>die Dateiendung ist keines dieser Formate</td><td>Datei in eines dieser Formate umwandeln</td></tr><tr><td>⚠ Fehler beim Bearbeiten: …</td><td>das Bearbeitungsprogramm ist an der Datei gescheitert, dahinter steht seine letzte Meldung</td><td>Datei in einem anderen Programm öffnen und neu speichern; siehe <a href="#häufige-fragen">Häufige Fragen</a></td></tr><tr><td>⚠ Fehler: …</td><td>unerwarteter Fehler, z. B. zu wenig Arbeitsspeicher</td><td>Seite neu laden, Datei einzeln versuchen</td></tr></tbody></table></div>
+<h3 id="wellenform">Wellenform</h3>
+<p>Das Balkenbild in der aufgeklappten Zeile zeigt die <strong>fertige</strong> Datei:</p>
+<ul><li><strong>Ocker:</strong> der ergänzte Vorlauf</li><li><strong>Petrol:</strong> der ursprüngliche Ton</li></ul>
+<p>Die Höhe ist logarithmisch dargestellt. Deshalb ist auch das sehr leise Rauschen als Balken zu sehen, obwohl es nicht zu hören ist. Bei <a href="#ohne-rauschen">Ohne Rauschen</a> ist der ockerfarbene Teil ganz flach.</p>
+<p>Bei <strong>Videos</strong> steht über der Wellenform zusätzlich das Bild. Ein Klick darauf startet oder pausiert die Wiedergabe.</p>
+<h3 id="hinweise-aus-der-prüfung">Hinweise aus der Prüfung</h3>
+<p>Rote Hinweise in der aufgeklappten Zeile. Zeilen mit Hinweisen klappen automatisch auf.</p>
+<div class="table-box"><table><thead><tr><th>Hinweis</th><th>Bedeutung</th><th>Was tun</th></tr></thead><tbody><tr><td>Rauschen im Vorlauf zu leise, bitte Pegel erhöhen</td><td>das Rauschen kommt nach dem Komprimieren mehr als 8 dB unter dem eingestellten Wert an</td><td><a href="#rauschpegel">Rauschpegel</a> um 5 dB erhöhen und <a href="#mit-neuen-einstellungen-wiederholen">wiederholen</a></td></tr><tr><td>Stille Stelle von 1,2 s ohne Rauschen</td><td>irgendwo im Ton gibt es eine Stelle ohne Rauschen, länger als 0,2 s</td><td>meist harmlos; ist <a href="#rauschen-unter-dem-ton">Rauschen unter dem Ton</a> aus, einschalten und wiederholen</td></tr></tbody></table></div>
+<h3 id="player">Player</h3>
+<p>Die Zeile mit dem runden Knopf zum Anhören des <strong>Ergebnisses</strong>.</p>
+<div class="table-box"><table><thead><tr><th>Element</th><th>Funktion</th></tr></thead><tbody><tr><td>▶ / ⏸</td><td>abspielen bzw. pausieren. Es läuft immer nur eine Datei, eine andere zu starten pausiert die vorige.</td></tr><tr><td><code>0:01 / 0:04</code></td><td>aktuelle Position und Gesamtlänge, inklusive Vorlauf</td></tr><tr><td>Regler</td><td>an eine Stelle springen</td></tr><tr><td>„Rauschen im Ergebnis −75 dB“</td><td>gemessener mittlerer Rauschpegel im Vorlauf. Fehlt bei <a href="#ohne-rauschen">Ohne Rauschen</a>.</td></tr></tbody></table></div>
+<p>Steht statt der Zeit <strong>„Vorschau in diesem Browser nicht abspielbar, die Datei ist trotzdem fertig“</strong>, kann der Browser dieses Format nicht abspielen, etwa manche MOV-Videos in Firefox. Die Datei lässt sich trotzdem speichern.</p>
+<h3 id="diese-datei-speichern">Diese Datei speichern</h3>
+<p>Speichert nur diese eine Datei in den Download-Ordner, mit Originalnamen und gegebenenfalls <a href="#zusatz-im-dateinamen">Zusatz</a>.</p>
+<h3 id="als-data-uri-kopieren">Als data-URI kopieren</h3>
+<p>Kopiert die fertige Datei als <strong><a href="#glossar">data-URI</a></strong> in die Zwischenablage, also als langen Text, der mit <code>data:audio/mpeg;base64,…</code> beginnt. Das braucht man, um die Datei direkt in eine Aufgaben- oder Unit-Definition einzufügen.</p>
+<ul><li>Danach steht daneben z. B. <strong>„Kopiert: data:audio/mpeg;base64, 92 KB Text“</strong>.</li><li>Steht dort <strong>„Kopieren nicht möglich, die data-URI wird stattdessen als Textdatei gespeichert.“</strong>, hat der Browser den Zugriff auf die Zwischenablage verweigert. Der Text liegt dann als <code>.txt</code>-Datei im Download-Ordner.</li></ul>
+<h2 id="aufklappbereiche-am-seitenende">Aufklappbereiche am Seitenende</h2>
+<div class="table-box"><table><thead><tr><th>Bereich</th><th>Inhalt</th></tr></thead><tbody><tr><td><strong>Was genau passiert</strong></td><td>kurze technische Erklärung: wie das Rauschen eingefügt wird, was mit Videos passiert, die Markierung</td></tr><tr><td><strong>Datenschutz und Lizenzen</strong></td><td>was gespeichert wird (nur der <a href="#zusatz-im-dateinamen">Zusatz</a>), dass nichts hochgeladen wird, und die Lizenzen aller verwendeten Bibliotheken</td></tr></tbody></table></div>
+<h2 id="bedienung-mit-der-tastatur">Bedienung mit der Tastatur</h2>
+<div class="table-box"><table><thead><tr><th>Taste</th><th>Wirkung</th></tr></thead><tbody><tr><td><strong>Tab</strong> / <strong>Umschalt+Tab</strong></td><td>zum nächsten bzw. vorigen Bedienelement</td></tr><tr><td><strong>↑</strong> / <strong>↓</strong> in <a href="#vorlauf">Vorlauf</a> oder <a href="#rauschpegel">Rauschpegel</a></td><td>Wert um einen Schritt erhöhen bzw. verringern</td></tr><tr><td><strong>Leertaste</strong> oder <strong>Enter</strong></td><td>Knopf auslösen, Zeile auf- oder zuklappen, Dateiauswahl öffnen</td></tr><tr><td><strong>Leertaste</strong> auf einem Kästchen</td><td>ankreuzen oder Haken entfernen</td></tr><tr><td><strong>←</strong> / <strong>→</strong> auf dem Regler im <a href="#player">Player</a></td><td>spulen</td></tr></tbody></table></div>
+<p>Das gerade aktive Element ist mit einem blauen Rahmen markiert.</p>
+<h2 id="meldungen-unter-dem-ablagefeld">Meldungen unter dem Ablagefeld</h2>
+<div class="table-box"><table><thead><tr><th>Meldung</th><th>Bedeutung</th></tr></thead><tbody><tr><td>Das Bearbeitungsprogramm wird geladen, beim ersten Mal ca. 32 MB …</td><td>erscheint beim ersten Bearbeiten; danach kommt das Programm aus dem Browser-Speicher</td></tr><tr><td><strong>Das Bearbeitungsprogramm konnte nicht geladen werden: …</strong></td><td>Netz unterbrochen oder Seite unvollständig. Seite neu laden.</td></tr><tr><td><strong>Dieses Werkzeug muss über einen Webserver geöffnet werden, nicht als Datei.</strong></td><td><code>index.html</code> wurde per Doppelklick geöffnet. Stattdessen die Offline-Fassung <code>audio-noise-generator-offline.html</code> verwenden.</td></tr></tbody></table></div>
+<h2 id="häufige-fragen">Häufige Fragen</h2>
+<h3 id="die-seite-sieht-normal-aus-reagiert-aber-auf-nichts">Die Seite sieht normal aus, reagiert aber auf nichts.</h3>
+<p>Wahrscheinlich wurde <code>index.html</code> per Doppelklick geöffnet. Per Doppelklick funktioniert nur die Offline-Fassung <code>audio-noise-generator-offline.html</code>, siehe <a href="#meldungen-unter-dem-ablagefeld">Meldungen unter dem Ablagefeld</a>.</p>
+<h3 id="kann-ich-die-originaldateien-einfach-ersetzen">Kann ich die Originaldateien einfach ersetzen?</h3>
+<p>Ja. Name und Format bleiben gleich, solange der <a href="#zusatz-im-dateinamen">Zusatz im Dateinamen</a> leer ist. Am besten die Originale vorher sichern.</p>
+<h3 id="hört-man-das-rauschen">Hört man das Rauschen?</h3>
+<p>Bei −70 dBFS und normaler Lautstärke nein. Es liegt unter dem Grundgeräusch jedes Raums.</p>
+<h3 id="was-passiert-wenn-ich-eine-datei-zweimal-hineinziehe">Was passiert, wenn ich eine Datei zweimal hineinziehe?</h3>
+<p>Beim zweiten Mal steht „Bereits bearbeitet, Markierung gefunden“. Es wird kein zweiter Vorlauf ergänzt.</p>
+<h3 id="warum-dauern-videos-so-lange">Warum dauern Videos so lange?</h3>
+<p>Damit Bild und Ton synchron bleiben, wird das erste Bild für die Dauer des Vorlaufs festgehalten und das Video neu kodiert. Das dauert etwa so lange wie das Video selbst, bei hoher Auflösung länger.</p>
+<h3 id="ein-großes-video-scheitert-mit-einem-fehler">Ein großes Video scheitert mit einem Fehler.</h3>
+<p>Das Bearbeitungsprogramm im Browser hat höchstens 2 GB Arbeitsspeicher. Sehr lange oder hoch aufgelöste Videos passen nicht hinein. Dafür das Skript <code>rauschen_werkzeug.py</code> verwenden (siehe README).</p>
+<h3 id="eine-datei-hängt-seit-langem-bei-wird-bearbeitet-">Eine Datei hängt seit Langem bei „Wird bearbeitet …“.</h3>
+<p>Bei Videos den Fortschrittsbalken beobachten. Bewegt er sich nicht mehr, die Seite neu laden und die Datei einzeln versuchen.</p>
+<h3 id="ändert-sich-die-qualität">Ändert sich die Qualität?</h3>
+<p>Die Dateien werden neu kodiert, mit gleicher Abtastrate und gleicher oder höherer Bitrate. Hörbar ist das nicht. Das Bild von Videos wird mit hoher Qualität neu kodiert (H.264). Ausnahmen: WAV-Dateien mit 24 oder 32 Bit werden als 16 Bit gespeichert, ein eingebettetes Cover-Bild geht verloren.</p>
+<h3 id="wird-irgendetwas-hochgeladen">Wird irgendetwas hochgeladen?</h3>
+<p>Nein. Alles passiert im Browser. Gespeichert wird nur der <a href="#zusatz-im-dateinamen">Zusatz im Dateinamen</a>, und auch der nur in diesem Browser.</p>
+<h2 id="glossar">Glossar</h2>
+<div class="table-box"><table><thead><tr><th>Begriff</th><th>Erklärung</th></tr></thead><tbody><tr><td><strong>Vorlauf</strong></td><td>der Abschnitt, der vor dem ursprünglichen Ton eingefügt wird: leises Rauschen oder, mit <a href="#ohne-rauschen">Ohne Rauschen</a>, Stille</td></tr><tr><td><strong>Nachlauf</strong></td><td>0,1 s Rauschen oder Stille am Dateiende, damit der Ton nicht hart abbricht</td></tr><tr><td><strong>Rauschen</strong></td><td>hier: gleichmäßiges „Weißes Rauschen“ in sehr geringer Lautstärke</td></tr><tr><td><strong>dBFS</strong></td><td>Dezibel bezogen auf die größtmögliche Lautstärke einer Datei. 0 dBFS ist das Maximum, −70 dBFS ist sehr leise.</td></tr><tr><td><strong>Markierung</strong></td><td>ein Eintrag im Kommentarfeld der Datei, z. B. <code>rauschen-werkzeug 1000ms -70dBFS</code>. Daran erkennt das Werkzeug bereits bearbeitete Dateien.</td></tr><tr><td><strong>Kodieren / Encodieren</strong></td><td>eine Datei in ihr Format (MP3, AAC, H.264 …) umrechnen und komprimieren</td></tr><tr><td><strong>data-URI</strong></td><td>eine Datei als Text, der direkt in andere Dateien eingefügt werden kann</td></tr><tr><td><strong>ZIP</strong></td><td>eine Datei, die mehrere Dateien gebündelt enthält; unter Windows per Doppelklick zu öffnen</td></tr></tbody></table></div>
+<h2 id="siehe-auch">Siehe auch</h2>
+<ul><li>README: Einrichtung, Bereitstellung und Hinweise zum Skript</li><li>ARCHITECTURE: technischer Aufbau des Werkzeugs</li><li>LICENSES: Lizenzen der verwendeten Bibliotheken</li></ul>
+  </main>
+</div>
+<script>
+// Go back through the history instead of reloading the tool: that way the browser restores the page
+// including the file list. If the help was opened directly there is no history, so it is a normal link.
+// In the offline version the help is a layer above the tool; then the tool closes it.
+document.getElementById('back').addEventListener('click', e => {
+  if (window.parent !== window) { e.preventDefault(); parent.postMessage('rauschen-hilfe-schliessen', '*'); }
+  else if (history.length > 1) { e.preventDefault(); history.back(); }
+});
+
+// Narrow: menu collapsed initially and collapsed again after a click. Wide: always open.
+const toc = document.getElementById('toc'), narrow = matchMedia('(max-width: 860px)');
+const sync = () => { toc.open = !narrow.matches; };
+sync(); narrow.addEventListener('change', sync);
+toc.addEventListener('click', e => { if (narrow.matches && e.target.closest('a')) toc.open = false; });
+
+// Highlight the menu entry of the section currently at the top of the window
+const links = new Map([...toc.querySelectorAll('a')].map(a => [decodeURIComponent(a.hash.slice(1)), a]));
+const heads = [...document.querySelectorAll('.content h2[id], .content h3[id]')].filter(h => links.has(h.id));
+function highlight() {
+  let current = heads[0];
+  for (const h of heads) if (h.getBoundingClientRect().top <= 80) current = h;
+  links.forEach(a => { a.classList.remove('active'); a.removeAttribute('aria-current'); });
+  const a = current && links.get(current.id);
+  if (!a) return;
+  a.classList.add('active'); a.setAttribute('aria-current', 'true');
+  // Only scroll the menu itself; scrollIntoView would also move the page
+  if (!narrow.matches) {
+    if (a.offsetTop < toc.scrollTop) toc.scrollTop = a.offsetTop - 16;
+    else if (a.offsetTop + a.offsetHeight > toc.scrollTop + toc.clientHeight) toc.scrollTop = a.offsetTop + a.offsetHeight - toc.clientHeight + 16;
+  }
+}
+let raf = 0;
+addEventListener('scroll', () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(highlight); }, { passive: true });
+highlight();
+</script>
+</body>
+</html>
