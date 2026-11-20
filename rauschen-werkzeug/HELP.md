@@ -171,16 +171,16 @@ Umschalter **„Wie Original“ | „MP3“**. Voreinstellung: Wie Original.
 
 Bei **MP3** erscheinen darunter die MP3-Einstellungen:
 
-| Einstellung | Auswahl | Hinweise |
-|---|---|---|
-| **Kanäle** | Wie Original, Mono, Stereo | Mono mischt beide Kanäle zusammen. Mehrkanalton wird bei „Wie Original“ zu Stereo. |
-| **Abtastrate** | Wie Original, 48 000 bis 8 000 Hz | MP3 kann höchstens 48 000 Hz. Bei „Wie Original“ werden höhere Raten (z. B. 96 000 Hz) auf 48 000 Hz gesenkt, krumme Raten auf die nächstniedrigere MP3-Rate. |
-| **Bitratenmodus** | Konstant (CBR), Variabel (VBR) | CBR: jede Sekunde gleich groß, gut für alte Player. VBR: die Bitrate passt sich dem Inhalt an, bei gleicher Qualität meist kleiner. |
-| **Bitrate** (nur CBR) | Wie Original, 320 bis 32 kb/s | Bei „Wie Original“ die Bitrate der Quelle, mindestens 64 kb/s, höchstens 320 kb/s. Unter 32 000 Hz erlaubt MP3 höchstens 160 kb/s, höhere Werte werden darauf gesenkt. |
-| **Qualität** (nur VBR) | V0 bis V9 | V0 ist die beste Qualität (ca. 245 kb/s), V9 die kleinste Datei (ca. 65 kb/s). Voreinstellung V2 (ca. 190 kb/s). Die Angaben gelten für 44 100 Hz Stereo. |
+| Einstellung | Auswahl | Voreinstellung | Hinweise |
+|---|---|---|---|
+| **Kanäle** | Wie Original, Mono, Stereo | Mono | Mono mischt beide Kanäle zusammen. Mehrkanalton wird bei „Wie Original“ zu Stereo. |
+| **Abtastrate** | Wie Original, 48 000 bis 8 000 Hz | 24 000 Hz | MP3 kann höchstens 48 000 Hz. Bei „Wie Original“ werden höhere Raten (z. B. 96 000 Hz) auf 48 000 Hz gesenkt, krumme Raten auf die nächstniedrigere MP3-Rate. |
+| **Bitratenmodus** | Konstant (CBR), Variabel (VBR) | Konstant (CBR) | CBR: jede Sekunde gleich groß, gut für alte Player. VBR: die Bitrate passt sich dem Inhalt an, bei gleicher Qualität meist kleiner. |
+| **Bitrate** (nur CBR) | Wie Original, 320 bis 32 kb/s | 64 kb/s | Bei „Wie Original“ die Bitrate der Quelle, mindestens 64 kb/s, höchstens 320 kb/s. Unter 32 000 Hz erlaubt MP3 höchstens 160 kb/s, höhere Werte werden darauf gesenkt. |
+| **Qualität** (nur VBR) | V0 bis V9 | V2 (ca. 190 kb/s) | V0 ist die beste Qualität (ca. 245 kb/s), V9 die kleinste Datei (ca. 65 kb/s). Die Angaben gelten für 44 100 Hz Stereo. |
 
 - Wer Format oder MP3-Einstellungen nach der Bearbeitung ändert, kann die Dateien über [Mit neuen Einstellungen wiederholen](#mit-neuen-einstellungen-wiederholen) neu erzeugen.
-- Die MP3-Einstellungen werden nicht gespeichert. Nach dem Neuladen der Seite steht das Ausgabeformat wieder auf „Wie Original“.
+- Die MP3-Einstellungen werden nicht gespeichert. Nach dem Neuladen der Seite steht das Ausgabeformat wieder auf „Wie Original“, die MP3-Einstellungen auf den Voreinstellungen (Mono, 24 000 Hz, CBR, 64 kb/s).
 
 [↑ Nach oben](#inhalt)
 
