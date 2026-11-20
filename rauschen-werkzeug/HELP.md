@@ -17,6 +17,7 @@ Diese Seite erklärt jedes Bedienelement der Reihe nach, so wie es auf dem Bilds
    - [Rauschen unter dem Ton](#rauschen-unter-dem-ton)
    - [Ohne Rauschen](#ohne-rauschen)
    - [Zusatz im Dateinamen](#zusatz-im-dateinamen)
+   - [Ausgabeformat](#ausgabeformat)
 3. [Ablagefeld](#ablagefeld)
 4. [Dateiliste](#dateiliste)
    - [Kopfzeile der Liste](#kopfzeile-der-liste)
@@ -136,6 +137,30 @@ Ein Text, der beim Speichern an **alle** Dateinamen angehängt wird, vor der End
 - Zeichen, die Windows oder macOS in Dateinamen nicht erlauben (`\ / : * ? " < > |`), werden weggelassen.
 - Der Zusatz betrifft nur den Namen. Wer ihn nach der Bearbeitung ändert, muss nichts neu bearbeiten.
 - Der Browser **merkt sich** den Zusatz für den nächsten Besuch. Wer das Feld leert, löscht ihn.
+- Mit dem [Ausgabeformat](#ausgabeformat) **MP3** ändert sich zusätzlich die Endung, z. B. `Aufgabe_01.wav` → `Aufgabe_01_vorlauf.mp3`.
+
+[↑ Nach oben](#inhalt)
+
+### Ausgabeformat
+
+Umschalter **„Wie Original“ | „MP3“**. Voreinstellung: Wie Original.
+
+- **Wie Original:** Jede Datei behält ihr Format, ihre Abtastrate und ihre Bitrate (siehe [Häufige Fragen](#ändert-sich-die-qualität)).
+- **MP3:** Alle **Audiodateien** (MP3, WAV, M4A) werden als MP3 gespeichert. Die Endung wird zu `.mp3`, in der Zeile steht neben der Größe z. B. „517 KB → MP3, 33 KB“.
+- **Videos behalten immer ihr Format.** Für sie hat der Umschalter keine Wirkung.
+
+Bei **MP3** erscheinen darunter die MP3-Einstellungen:
+
+| Einstellung | Auswahl | Hinweise |
+|---|---|---|
+| **Kanäle** | Wie Original, Mono, Stereo | Mono mischt beide Kanäle zusammen. Mehrkanalton wird bei „Wie Original“ zu Stereo. |
+| **Abtastrate** | Wie Original, 48 000 bis 8 000 Hz | MP3 kann höchstens 48 000 Hz. Bei „Wie Original“ werden höhere Raten (z. B. 96 000 Hz) auf 48 000 Hz gesenkt, krumme Raten auf die nächstniedrigere MP3-Rate. |
+| **Bitratenmodus** | Konstant (CBR), Variabel (VBR) | CBR: jede Sekunde gleich groß, gut für alte Player. VBR: die Bitrate passt sich dem Inhalt an, bei gleicher Qualität meist kleiner. |
+| **Bitrate** (nur CBR) | Wie Original, 320 bis 32 kb/s | Bei „Wie Original“ die Bitrate der Quelle, mindestens 64 kb/s, höchstens 320 kb/s. Unter 32 000 Hz erlaubt MP3 höchstens 160 kb/s, höhere Werte werden darauf gesenkt. |
+| **Qualität** (nur VBR) | V0 bis V9 | V0 ist die beste Qualität (ca. 245 kb/s), V9 die kleinste Datei (ca. 65 kb/s). Voreinstellung V2 (ca. 190 kb/s). Die Angaben gelten für 44 100 Hz Stereo. |
+
+- Wer Format oder MP3-Einstellungen nach der Bearbeitung ändert, kann die Dateien über [Mit neuen Einstellungen wiederholen](#mit-neuen-einstellungen-wiederholen) neu erzeugen.
+- Die MP3-Einstellungen werden nicht gespeichert. Nach dem Neuladen der Seite steht das Ausgabeformat wieder auf „Wie Original“.
 
 [↑ Nach oben](#inhalt)
 
@@ -179,7 +204,7 @@ Rechts stehen die drei Knöpfe, die folgen.
 
 ### Mit neuen Einstellungen wiederholen
 
-Erscheint **nur**, wenn [Vorlauf](#vorlauf), [Rauschpegel](#rauschpegel), [Rauschen unter dem Ton](#rauschen-unter-dem-ton) oder [Ohne Rauschen](#ohne-rauschen) nicht mehr zu den Einstellungen passen, mit denen die Dateien bearbeitet wurden.
+Erscheint **nur**, wenn [Vorlauf](#vorlauf), [Rauschpegel](#rauschpegel), [Rauschen unter dem Ton](#rauschen-unter-dem-ton), [Ohne Rauschen](#ohne-rauschen) oder das [Ausgabeformat](#ausgabeformat) nicht mehr zu den Einstellungen passen, mit denen die Dateien bearbeitet wurden.
 
 - Ein Klick bearbeitet alle betroffenen Dateien neu, mit den aktuellen Einstellungen. Man muss sie nicht noch einmal auswählen.
 - Wer die alten Werte wieder einstellt, lässt den Knopf verschwinden.
@@ -343,7 +368,7 @@ Wahrscheinlich wurde `index.html` per Doppelklick geöffnet. Per Doppelklick fun
 
 ### Kann ich die Originaldateien einfach ersetzen?
 
-Ja. Name und Format bleiben gleich, solange der [Zusatz im Dateinamen](#zusatz-im-dateinamen) leer ist. Am besten die Originale vorher sichern.
+Ja. Name und Format bleiben gleich, solange der [Zusatz im Dateinamen](#zusatz-im-dateinamen) leer ist und das [Ausgabeformat](#ausgabeformat) auf „Wie Original“ steht. Am besten die Originale vorher sichern.
 
 ### Hört man das Rauschen?
 
@@ -367,7 +392,7 @@ Bei Videos den Fortschrittsbalken beobachten. Bewegt er sich nicht mehr, die Sei
 
 ### Ändert sich die Qualität?
 
-Die Dateien werden neu kodiert, mit gleicher Abtastrate und gleicher oder höherer Bitrate. Hörbar ist das nicht. Das Bild von Videos wird mit hoher Qualität neu kodiert (H.264). Ausnahmen: WAV-Dateien mit 24 oder 32 Bit werden als 16 Bit gespeichert, ein eingebettetes Cover-Bild geht verloren.
+Die Dateien werden neu kodiert, mit gleicher Abtastrate und gleicher oder höherer Bitrate. Hörbar ist das nicht. Das Bild von Videos wird mit hoher Qualität neu kodiert (H.264). Ausnahmen: WAV-Dateien mit 24 oder 32 Bit werden als 16 Bit gespeichert, ein eingebettetes Cover-Bild geht verloren. Mit dem [Ausgabeformat](#ausgabeformat) MP3 bestimmen die gewählten MP3-Einstellungen die Qualität.
 
 ### Wird irgendetwas hochgeladen?
 

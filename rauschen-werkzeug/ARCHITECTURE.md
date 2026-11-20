@@ -63,17 +63,17 @@ Beim ersten Bearbeiten lädt der Browser `ffmpeg-core.wasm` (ca. 32 MB). Danach 
 Die Datei besteht aus vier Teilen, in dieser Reihenfolge:
 
 1. **Styles** (`<style>`). Farben und Linien sind als Variablen auf `:root` definiert (`--bg`, `--primary`, `--added`, `--content` usw.) und für den dunklen Modus noch einmal überschrieben. Danach folgen die Bausteine: Einstellungskarte, Ablagefeld, Dateiliste mit aufklappbaren Zeilen, Player und Knöpfe.
-2. **Markup** (`<main>`). Kopf, Einstellungskarte (Vorlauf, Rauschpegel, „Auch unter den Ton legen“, Zusatz im Dateinamen), Ablagefeld, Dateiliste mit Kopfzeile und zum Schluss „Was genau passiert“. Die Dateizeilen erzeugt erst das Skript.
+2. **Markup** (`<main>`). Kopf, Einstellungskarte (Vorlauf, Rauschpegel, „Auch unter den Ton legen“, Zusatz im Dateinamen, Ausgabeformat mit MP3-Einstellungen), Ablagefeld, Dateiliste mit Kopfzeile und zum Schluss „Was genau passiert“. Die Dateizeilen erzeugt erst das Skript.
 3. **`file://`-Prüfung** (ein einfaches `<script>`). Zeigt den Hinweis an und sperrt das Auswahlfeld, wenn die Seite nicht über einen Webserver geöffnet wurde.
 4. **Hauptskript** (`<script type="module">`), gegliedert in Abschnitte mit Trennkommentaren:
 
 | Abschnitt | Wichtige Funktionen | Aufgabe |
 |---|---|---|
 | ffmpeg | `freshEngine`, `stopEngine`, `run` | FFmpeg starten, abbrechen, Befehle ausführen und deren Log mitschneiden |
-| Analyse | `probeInfo`, `audioArgs`, `audioGraph`, `calibrate`, `verify` | Datei untersuchen, Encoder-Einstellungen wählen, Filter bauen, Pegel abstimmen, Ergebnis prüfen |
+| Analyse | `probeInfo`, `target`, `audioArgs`, `audioGraph`, `calibrate`, `verify` | Datei untersuchen, Ausgabeformat bestimmen, Encoder-Einstellungen wählen, Filter bauen, Pegel abstimmen, Ergebnis prüfen |
 | Bearbeitung | `processEntry` | Der Ablauf für eine einzelne Datei |
 | Anzeige | `makeRow`, `drawWave` | Dateizeile mit Status, Wellenform, Player und Knöpfen |
-| Ablauf | `settings`, `enqueue`, `addFiles`, `updateBatch`, `updateRedo`, `savedName`, `saveFile` | Einstellungen lesen, Warteschlange, Fortschritt, Wiederholen, Speichern |
+| Ablauf | `settings`, `outSettings`, `forEntry`, `updateCodecPanel`, `enqueue`, `addFiles`, `updateBatch`, `updateRedo`, `savedName`, `saveFile` | Einstellungen lesen, Warteschlange, Fortschritt, Wiederholen, Speichern |
 
 ## Ablauf einer Datei
 
@@ -94,6 +94,7 @@ processEntry
        ├─ keine Tonspur             ──► Fehlermeldung
        ├─ Markierung im Kommentar   ──► „Bereits bearbeitet“, Datei bleibt unverändert
        └─ Video ohne Bild           ──► Fehlermeldung
+     target             Ausgabeformat: wie das Original oder MP3 mit den gewählten Einstellungen
   4. calibrate          Pegelausgleich für den Encoder bestimmen
   5. Hauptbefehl        Rauschen hineinmischen, neu encodieren, Markierung setzen
   6. verify             Ergebnis nachmessen
@@ -180,7 +181,11 @@ Deshalb startet `freshEngine` für jede Datei ein neues FFmpeg und beendet das a
 - **Alle speichern:** packt alle fertigen Dateien mit `zipStore` (`zip.js`) in `rauschen-werkzeug.zip`. Die Dateien werden nur gespeichert, nicht noch einmal komprimiert, weil Audio und Video schon komprimiert sind. Gleiche Namen bekommen einen Zusatz wie `Aufgabe (2).mp3` (`uniqueNames`), sonst würden sie sich beim Entpacken überschreiben. Grenze: 4 GB für das ganze Archiv.
 - **Als data-URI kopieren:** wandelt das Ergebnis in eine `data:`-Adresse um und legt sie in die Zwischenablage. Geht das nicht, wird sie stattdessen als Textdatei gespeichert.
 
-Endung und Containerformat bleiben immer gleich. Neu kodiert wird trotzdem: MP3 als MP3, WAV immer als 16 Bit, M4A und der Ton in Videos als AAC, Videobild als H.264.
+Mit dem Ausgabeformat „Wie Original“ bleiben Endung und Containerformat gleich. Neu kodiert wird trotzdem: MP3 als MP3, WAV immer als 16 Bit, M4A und der Ton in Videos als AAC, Videobild als H.264.
+
+### Ausgabeformat MP3
+
+Mit „MP3“ bestimmt `target` für Audiodateien statt des Originalformats die Endung `mp3` und die Zielwerte (Abtastrate, Kanäle, Bitrate bzw. VBR-Qualität). Videos sind ausgenommen: `forEntry` setzt für sie das Ausgabeformat auf „Wie Original“, damit eine Änderung bei ihnen auch kein Wiederholen auslöst. Werte auf „Wie Original“ stehen in `s.out` als `null` und werden aus der Quelle übernommen: Abtastraten über 48 kHz auf die nächstniedrigere MP3-Rate, Bitrate wie bei MP3-Quellen über `snapKbps`. Eine gewählte Bitrate rundet `fitKbps` auf die nächste erlaubte, unter 32 kHz höchstens 160 kb/s. CBR wird als `-b:a`, VBR als `-q:a 0–9` an LAME übergeben. Die Umrechnung von Abtastrate und Kanälen übernimmt der Filtergraph (`aresample`, `aformat`), Pegelabstimmung und Prüfung laufen mit den Zielwerten. `entry.resultExt` hält die Endung des Ergebnisses, `savedName` tauscht damit beim Speichern die Endung aus.
 
 ## Wo man was ändert
 
@@ -188,7 +193,7 @@ Endung und Containerformat bleiben immer gleich. Neu kodiert wird trotzdem: MP3 
 |---|---|
 | Voreinstellungen, Grenzen, Schrittweiten | `NUM` im Abschnitt „Ablauf“ |
 | Erlaubte Formate | `AUDIO_EXT`, `VIDEO_EXT` und `MIME` oben im Hauptskript, dazu das `accept`-Attribut am Auswahlfeld |
-| Encoder und Bitraten | `audioArgs` und `snapKbps` |
+| Encoder und Bitraten | `audioArgs`, `snapKbps`, `fitKbps`, für MP3-Ausgabe `target` und die Auswahllisten im `#mp3-panel` |
 | Art und Länge des Rauschens, Nachlauf | `audioGraph` |
 | Videoqualität | Hauptbefehl in `processEntry` (`-crf`, `-preset`) |
 | Prüfschwellen | `verify` und der Hinweis zu stillen Stellen in `makeRow` |
@@ -249,7 +254,7 @@ Vom Öffnen bis zum ersten Bearbeitungsschritt vergingen etwa 0,3 s.
 
 - **Arbeitsspeicher:** Jede Datei wird komplett in den Speicher des FFmpeg im Browser kopiert, das Ergebnis ebenso. Sehr lange oder hoch aufgelöste Videos können daran scheitern. Dafür ist das Skript `rauschen_werkzeug.py` gedacht.
 - **Geschwindigkeit:** Der FFmpeg-Kern läuft einfädig. Audio geht schnell, Videos dauern spürbar länger, weil das Bild neu encodiert wird.
-- **Verlustbehaftete Sonderfälle:** 24- und 32-Bit-WAV werden zu 16 Bit, Apple Lossless (ALAC) wird zu AAC, Mehrkanalton wird zu Stereo, MP3 mit variabler Bitrate wird zu konstanter Bitrate.
+- **Verlustbehaftete Sonderfälle:** 24- und 32-Bit-WAV werden zu 16 Bit, Apple Lossless (ALAC) wird zu AAC, Mehrkanalton wird zu Stereo, MP3 mit variabler Bitrate wird bei „Wie Original“ zu konstanter Bitrate.
 - **Browser:** Entwickelt und getestet in Chromium, die Bearbeitung zusätzlich in Firefox. Safari ist noch nicht getestet.
 
 ## Bibliotheken und Lizenzen

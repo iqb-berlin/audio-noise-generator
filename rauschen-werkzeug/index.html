@@ -40,7 +40,7 @@
   body { margin: 0; background: var(--bg); color: var(--ink);
     font-family: "Atkinson Hyperlegible", "Segoe UI", system-ui, -apple-system, sans-serif;
     font-size: 1rem; line-height: 1.5; }
-  button, input { font: inherit; }
+  button, input, select { font: inherit; }
   [hidden] { display: none !important; }
   .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); border: 0; }
   main { max-width: 820px; margin: 0 auto; padding: 48px 20px 64px; display: flex; flex-direction: column; gap: 32px; }
@@ -76,6 +76,26 @@
   .field.off .switch:hover { border-color: var(--field-line); }
   .field.off .step:hover { background: var(--surface-2); color: var(--muted); }
   .switch input { width: 18px; height: 18px; margin: 0; flex-shrink: 0; accent-color: var(--primary); }
+  /* Output format: segmented switch, and below it the panel with the encoder settings */
+  .segmented { display: flex; height: 44px; border: 1px solid var(--field-line); border-radius: 8px; background: var(--surface-2);
+    padding: 3px; gap: 3px; margin: 0; min-width: 0; }
+  .segmented label { flex: 1 1 0; position: relative; display: flex; align-items: center; justify-content: center; border-radius: 5px;
+    font-size: 0.9375rem; cursor: pointer; color: var(--muted); }
+  .segmented label:hover { color: var(--ink); }
+  .segmented input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
+  .segmented label.on {   /* class set by script instead of :has(), which Firefox ESR 115 does not know */
+    background: var(--surface); color: var(--ink); font-weight: 700;
+    box-shadow: 0 0 0 1px var(--field-line); }
+  .segmented label:focus-within { outline: 3px solid var(--focus); outline-offset: 1px; }
+  .codec-panel { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px 20px;
+    padding: 16px; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--field-div); }
+  .codec-panel .panel-title { grid-column: 1 / -1; margin: 0; font-size: 0.9375rem; font-weight: 700; }
+  .codec-panel .panel-title + .hint { grid-column: 1 / -1; margin-top: -10px; }
+  .select { height: 44px; width: 100%; padding: 0 36px 0 12px; border: 1px solid var(--field-line); border-radius: 8px;
+    background: var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%2357606A' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 12px center;
+    color: var(--ink); font: inherit; font-size: 0.9375rem; appearance: none; cursor: pointer; }
+  .select:hover { border-color: var(--muted); }
+  .select:focus-visible { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-ring); }
 
   /* Drop zone */
   .drop { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
@@ -227,6 +247,84 @@
       </div>
       <span class="hint" id="suffix-hint">Leer lassen, um die Originalnamen zu behalten</span>
     </div>
+    <div class="field">
+      <span class="field-label" id="codec-label">Ausgabeformat</span>
+      <div class="segmented" role="radiogroup" aria-labelledby="codec-label" aria-describedby="codec-hint">
+        <label><input type="radio" name="codec" value="orig" checked>Wie Original</label>
+        <label><input type="radio" name="codec" value="mp3">MP3</label>
+      </div>
+      <span class="hint" id="codec-hint">Videos behalten immer ihr Format</span>
+    </div>
+    <div class="codec-panel" id="mp3-panel" role="group" aria-labelledby="mp3-title" hidden>
+      <p class="panel-title" id="mp3-title">MP3-Einstellungen</p>
+      <span class="hint">Gilt für alle Audiodateien. Die Endung wird beim Speichern zu .mp3.</span>
+      <div class="field">
+        <label class="field-label" for="mp3-channels">Kanäle</label>
+        <select id="mp3-channels" class="select">
+          <option value="orig">Wie Original</option>
+          <option value="1">Mono</option>
+          <option value="2">Stereo</option>
+        </select>
+      </div>
+      <div class="field">
+        <label class="field-label" for="mp3-rate">Abtastrate</label>
+        <select id="mp3-rate" class="select" aria-describedby="mp3-rate-hint">
+          <option value="orig">Wie Original</option>
+          <option value="48000">48 000 Hz</option>
+          <option value="44100">44 100 Hz</option>
+          <option value="32000">32 000 Hz</option>
+          <option value="24000">24 000 Hz</option>
+          <option value="22050">22 050 Hz</option>
+          <option value="16000">16 000 Hz</option>
+          <option value="12000">12 000 Hz</option>
+          <option value="11025">11 025 Hz</option>
+          <option value="8000">8 000 Hz</option>
+        </select>
+        <span class="hint" id="mp3-rate-hint">Höhere Raten als 48 000 Hz werden auf 48 000 Hz gesenkt</span>
+      </div>
+      <div class="field">
+        <label class="field-label" for="mp3-mode">Bitratenmodus</label>
+        <select id="mp3-mode" class="select">
+          <option value="cbr">Konstant (CBR)</option>
+          <option value="vbr">Variabel (VBR)</option>
+        </select>
+      </div>
+      <div class="field" id="mp3-kbps-field">
+        <label class="field-label" for="mp3-kbps">Bitrate</label>
+        <select id="mp3-kbps" class="select" aria-describedby="mp3-kbps-hint">
+          <option value="orig">Wie Original</option>
+          <option value="320">320 kb/s</option>
+          <option value="256">256 kb/s</option>
+          <option value="224">224 kb/s</option>
+          <option value="192">192 kb/s</option>
+          <option value="160">160 kb/s</option>
+          <option value="128">128 kb/s</option>
+          <option value="112">112 kb/s</option>
+          <option value="96">96 kb/s</option>
+          <option value="80">80 kb/s</option>
+          <option value="64">64 kb/s</option>
+          <option value="48">48 kb/s</option>
+          <option value="32">32 kb/s</option>
+        </select>
+        <span class="hint" id="mp3-kbps-hint">Unter 32 000 Hz höchstens 160 kb/s</span>
+      </div>
+      <div class="field" id="mp3-quality-field" hidden>
+        <label class="field-label" for="mp3-quality">Qualität</label>
+        <select id="mp3-quality" class="select" aria-describedby="mp3-quality-hint">
+          <option value="0">V0, ca. 245 kb/s</option>
+          <option value="1">V1, ca. 225 kb/s</option>
+          <option value="2" selected>V2, ca. 190 kb/s</option>
+          <option value="3">V3, ca. 175 kb/s</option>
+          <option value="4">V4, ca. 165 kb/s</option>
+          <option value="5">V5, ca. 130 kb/s</option>
+          <option value="6">V6, ca. 115 kb/s</option>
+          <option value="7">V7, ca. 100 kb/s</option>
+          <option value="8">V8, ca. 85 kb/s</option>
+          <option value="9">V9, ca. 65 kb/s</option>
+        </select>
+        <span class="hint" id="mp3-quality-hint">V0 ist die beste Qualität. Die Bitrate gilt für 44 100 Hz Stereo.</span>
+      </div>
+    </div>
   </section>
 
   <label class="drop" id="drop">
@@ -258,7 +356,7 @@
   <details>
     <summary>Was genau passiert</summary>
     <p>Vor den Ton wird ein Vorlauf aus leisem Rauschen gesetzt, auf Wunsch liegt dasselbe Rauschen auch unter dem restlichen Ton. Mit „Kein Rauschen, nur Stille“ besteht der Vorlauf stattdessen aus reiner Stille. Das verlängert die Datei nur, gegen Adapter, die den Anfang verschlucken, hilft es nicht. Bei Videos steht das erste Bild für die Dauer des Vorlaufs still, damit Bild und Ton synchron bleiben. Dafür wird das Video neu encodiert, was je nach Länge und Rechner einige Zeit dauern kann.</p>
-    <p>Die Dateien behalten ihren Namen und ihr Format. Abtastrate und Bitrate entsprechen dem Original. Der Pegel wird so angepasst, dass das Rauschen nach der Komprimierung tatsächlich beim eingestellten Wert ankommt, und jede fertige Datei wird zur Kontrolle noch einmal geprüft.</p>
+    <p>Die Dateien behalten ihren Namen und ihr Format. Abtastrate und Bitrate entsprechen dem Original. Mit dem Ausgabeformat „MP3“ werden Audiodateien stattdessen als MP3 mit den gewählten Einstellungen gespeichert, Videos behalten ihr Format. Der Pegel wird so angepasst, dass das Rauschen nach der Komprimierung tatsächlich beim eingestellten Wert ankommt, und jede fertige Datei wird zur Kontrolle noch einmal geprüft.</p>
     <p>„Alle speichern“ fasst alle fertigen Dateien in einer ZIP-Datei zusammen.</p>
     <p>Bearbeitete Dateien erhalten eine Markierung im Kommentarfeld und werden bei einem zweiten Durchgang übersprungen. Das gilt auch für Dateien, die mit dem Skript <code>rauschen_werkzeug.py</code> bearbeitet wurden.</p>
   </details>
@@ -301,6 +399,7 @@ const VIDEO_EXT = ['mp4', 'm4v', 'mov'];
 const MIME = { mp3: 'audio/mpeg', wav: 'audio/wav', m4a: 'audio/mp4', mp4: 'video/mp4', m4v: 'video/mp4', mov: 'video/quicktime' };
 const MP3_RATES_V1 = [32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320];
 const MP3_RATES_V2 = [8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160];
+const MP3_SAMPLE_RATES = [48000, 44100, 32000, 24000, 22050, 16000, 12000, 11025, 8000];
 
 const $ = id => document.getElementById(id);
 const engineEl = $('engine'), noteEl = $('note'), filesEl = $('files');
@@ -368,8 +467,26 @@ function snapKbps(kbps, sr) {
   const want = Math.max(kbps || 128, sr >= 32000 ? 64 : 32);
   return rates.find(r => r >= want) || rates[rates.length - 1];
 }
+// An explicitly chosen bitrate: the next allowed one at or above it, at most the highest for this sample rate
+function fitKbps(kbps, sr) {
+  const rates = sr >= 32000 ? MP3_RATES_V1 : MP3_RATES_V2;
+  return rates.find(r => r >= kbps) || rates[rates.length - 1];
+}
+// What is written: extension and audio parameters. "Wie Original" keeps both; MP3 output only applies to
+// audio files, videos always keep their format. Null values in s.out mean "as in the original".
+function target(ext, audio, s) {
+  const o = s.out;
+  if (o.codec !== 'mp3' || VIDEO_EXT.includes(ext)) return { ext, a: audio };
+  const sampleRate = o.rate ?? (MP3_SAMPLE_RATES.find(r => r <= audio.sampleRate) || 8000);
+  const a = { codec: 'mp3', sampleRate, channels: o.channels ?? audio.channels, kbps: audio.kbps };
+  if (o.mode === 'vbr') a.vbrQuality = o.quality;
+  else a.mp3Kbps = o.kbps ? fitKbps(o.kbps, sampleRate) : snapKbps(audio.kbps, sampleRate);
+  return { ext: 'mp3', a };
+}
 function audioArgs(ext, a) {
-  if (ext === 'mp3') return ['-c:a', 'libmp3lame', '-b:a', `${snapKbps(a.kbps, a.sampleRate)}k`, '-id3v2_version', '3'];
+  if (ext === 'mp3') return ['-c:a', 'libmp3lame',
+    ...(a.vbrQuality != null ? ['-q:a', String(a.vbrQuality)] : ['-b:a', `${a.mp3Kbps ?? snapKbps(a.kbps, a.sampleRate)}k`]),
+    '-id3v2_version', '3'];
   if (ext === 'wav') return ['-c:a', 'pcm_s16le'];
   return ['-c:a', 'aac', '-b:a', `${Math.max(a.kbps || 128, 96)}k`];
 }
@@ -443,7 +560,8 @@ async function processEntry(entry, s) {
   const { ext, ui } = entry;
   ui.status('busy', 'Wartet auf das Bearbeitungsprogramm …');
   await freshEngine();
-  const inName = `in.${ext}`, outName = `out.${ext}`;
+  const inName = `in.${ext}`;
+  let outName = null;
   await ffmpeg.writeFile(inName, new Uint8Array(await entry.file.arrayBuffer()));
   try {
     const info = probeInfo((await run(['-hide_banner', '-i', inName])).log);
@@ -451,10 +569,12 @@ async function processEntry(entry, s) {
     if (info.comment.startsWith(MARKER)) { ui.status('info', 'Bereits bearbeitet, Markierung gefunden'); return; }
     if (VIDEO_EXT.includes(ext) && !info.hasVideo) { ui.status('bad', 'Kein Bild gefunden, bitte als Audiodatei speichern'); return; }
 
+    const out = target(ext, info.audio, s);
+    outName = `out.${out.ext}`;
     let amp = 0;
     if (s.noise) {
       ui.status('busy', 'Pegel wird abgestimmt …');
-      amp = await calibrate(ext, info.audio, s);
+      amp = await calibrate(out.ext, out.a, s);
     }
     // The marker always starts with MARKER, also for a silent lead-in; only this prefix is checked
     const marker = `${MARKER} ${Math.round(s.lead * 1000)}ms ${s.noise ? `${s.level}dBFS` : 'stille'}`;
@@ -468,12 +588,12 @@ async function processEntry(entry, s) {
     let args;
     if (info.hasVideo) {
       args = ['-y', '-i', inName, '-filter_complex',
-        `[0:v:0]${s.lead > 0 ? `tpad=start_duration=${s.lead}:start_mode=clone` : 'null'}[v];${audioGraph(info.audio, s, amp)}`,
+        `[0:v:0]${s.lead > 0 ? `tpad=start_duration=${s.lead}:start_mode=clone` : 'null'}[v];${audioGraph(out.a, s, amp)}`,
         '-map', '[v]', '-map', '[aout]', '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '20', '-pix_fmt', 'yuv420p',
-        ...audioArgs(ext, info.audio), '-movflags', '+faststart', '-metadata', `comment=${marker}`, outName];
+        ...audioArgs(out.ext, out.a), '-movflags', '+faststart', '-metadata', `comment=${marker}`, outName];
     } else {
-      args = ['-y', '-i', inName, '-filter_complex', audioGraph(info.audio, s, amp), '-map', '[aout]',
-        ...audioArgs(ext, info.audio), '-metadata', `comment=${marker}`, outName];
+      args = ['-y', '-i', inName, '-filter_complex', audioGraph(out.a, s, amp), '-map', '[aout]',
+        ...audioArgs(out.ext, out.a), '-metadata', `comment=${marker}`, outName];
     }
     const res = await run(args, onLine);
     ui.progress(null);
@@ -484,10 +604,11 @@ async function processEntry(entry, s) {
     ui.status('busy', 'Ergebnis wird geprüft …');
     const check = await verify(outName, s);
     const data = await ffmpeg.readFile(outName);
-    entry.result = new Blob([data.buffer], { type: MIME[ext] });
+    entry.result = new Blob([data.buffer], { type: MIME[out.ext] });
+    entry.resultExt = out.ext;
     ui.done(entry, check, s, info.hasVideo);
   } finally {
-    for (const n of [inName, outName]) { try { await ffmpeg.deleteFile(n); } catch {} }
+    for (const n of [inName, outName]) { if (n) try { await ffmpeg.deleteFile(n); } catch {} }
   }
 }
 
@@ -541,7 +662,8 @@ function makeRow(entry) {
     <div class="bar" hidden><i></i></div>
     <div class="row-body" hidden></div>`;
   el.querySelector('.name').textContent = entry.file.name;
-  el.querySelector('.meta').textContent = fmtSize(entry.file.size);
+  const meta = el.querySelector('.meta');
+  meta.textContent = fmtSize(entry.file.size);
   filesEl.appendChild(el);
   const head = el.querySelector('.row-head'), st = el.querySelector('.row-status');
   const bar = el.querySelector('.bar'), body = el.querySelector('.row-body');
@@ -564,6 +686,7 @@ function makeRow(entry) {
     reset() {
       if (media) { media.pause(); if (playingMedia === media) playingMedia = null; media.removeAttribute('src'); media.load(); media = null; }
       if (url) { URL.revokeObjectURL(url); url = null; }
+      meta.textContent = fmtSize(entry.file.size);
       canvas = null; body.innerHTML = ''; head.disabled = true; body.hidden = true; bar.hidden = true;
     },
     progress(p) {
@@ -573,6 +696,8 @@ function makeRow(entry) {
     async done(entry, check, s, isVideo) {
       if (check.ok) setStatus('good', s.lead > 0 ? `Vorlauf ${fmtSec(s.lead)}${s.noise ? '' : ', Stille'}` : 'Ohne Vorlauf', ICON.check);
       else setStatus('bad', 'Vorlauf zu leise', ICON.warn);
+      // Converted to another format: show it next to the size
+      if (entry.resultExt !== entry.ext) meta.textContent = `${fmtSize(entry.file.size)} → ${entry.resultExt.toUpperCase()}, ${fmtSize(entry.result.size)}`;
 
       url = URL.createObjectURL(entry.result);
       media = document.createElement(isVideo ? 'video' : 'audio');
@@ -636,7 +761,7 @@ function makeRow(entry) {
       const actions = make('div', 'file-actions');
       const btn = make('button', 'btn btn-flat', 'Diese Datei speichern');
       btn.type = 'button';
-      btn.addEventListener('click', () => saveFile(savedName(entry.file.name), entry.result));
+      btn.addEventListener('click', () => saveFile(resultName(entry), entry.result));
       const copy = make('button', 'btn btn-stroked', 'Als data-URI kopieren');
       copy.type = 'button';
       const copied = make('span', 'note');
@@ -647,7 +772,7 @@ function makeRow(entry) {
         copied.textContent = ok
           ? `Kopiert: ${uri.slice(0, uri.indexOf(','))}, ${fmtSize(uri.length)} Text`
           : 'Kopieren nicht möglich, die data-URI wird stattdessen als Textdatei gespeichert.';
-        if (!ok) saveFile(savedName(entry.file.name).replace(/\.[^.]+$/, '') + '.txt', new Blob([uri], { type: 'text/plain' }));
+        if (!ok) saveFile(resultName(entry).replace(/\.[^.]+$/, '') + '.txt', new Blob([uri], { type: 'text/plain' }));
       });
       actions.append(btn, copy, copied);
       body.append(actions);
@@ -696,7 +821,28 @@ function settings() {
     // Without noise, level and "under the audio" do not matter; that way changing them does not trigger a repeat
     level: noise ? clampNum('level', readNum('level') ?? NUM.level.def) : null,
     underlay: noise && $('underlay').checked,
+    out: outSettings(),
   };
+}
+// Output format. Only the values that apply are included (bitrate only with CBR, quality only with VBR),
+// so changing a value that has no effect does not trigger a repeat. null = as in the original.
+function outSettings() {
+  const codec = document.querySelector('input[name="codec"]:checked').value;
+  if (codec !== 'mp3') return { codec };
+  const opt = id => $(id).value === 'orig' ? null : +$(id).value;
+  const vbr = $('mp3-mode').value === 'vbr';
+  return { codec, channels: opt('mp3-channels'), rate: opt('mp3-rate'), mode: vbr ? 'vbr' : 'cbr',
+    kbps: vbr ? null : opt('mp3-kbps'), quality: vbr ? +$('mp3-quality').value : null };
+}
+// Videos always keep their format, so the output format does not count for them
+const forEntry = (ext, s) => VIDEO_EXT.includes(ext) ? { ...s, out: { codec: 'orig' } } : s;
+// Extension a file gets with these settings
+const outExt = (ext, s) => AUDIO_EXT.includes(ext) && s.out.codec === 'mp3' ? 'mp3' : ext;
+function updateCodecPanel() {
+  const mp3 = outSettings().codec === 'mp3', vbr = $('mp3-mode').value === 'vbr';
+  document.querySelectorAll('.segmented label').forEach(l => l.classList.toggle('on', l.querySelector('input').checked));
+  $('mp3-panel').hidden = !mp3;
+  $('mp3-kbps-field').hidden = vbr; $('mp3-quality-field').hidden = !vbr;
 }
 function updateNoiseFields() {
   const off = $('nonoise').checked;
@@ -706,6 +852,7 @@ function updateNoiseFields() {
   $('lead-hint').textContent = `${off ? 'Stille' : 'Rauschen'} vor dem ersten Ton, in Sekunden`;
 }
 const sameSettings = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+const isStale = (e, s) => e.s && !sameSettings(e.s, forEntry(e.ext, s));
 
 // Queues a file with the given settings. If it is already waiting, it just takes over the new settings.
 function enqueue(entry, s) {
@@ -736,7 +883,7 @@ function updateBatch() {
 
 function updateRedo() {
   const s = settings();
-  $('redo').hidden = !entries.some(e => e.s && !sameSettings(e.s, s));
+  $('redo').hidden = !entries.some(e => isStale(e, s));
 }
 
 function addFiles(list) {
@@ -752,7 +899,7 @@ function addFiles(list) {
     entries.push(entry);
     if (![...AUDIO_EXT, ...VIDEO_EXT].includes(ext)) { entry.ui.status('bad', 'Format wird nicht unterstützt (MP3, WAV, M4A, MP4, M4V, MOV)'); continue; }
     if (!entries.some(e => e.s)) entry.ui.openWhenDone();   // the first processable file in the list is expanded
-    enqueue(entry, s);
+    enqueue(entry, forEntry(ext, s));
   }
   $('actions').hidden = !entries.length;
   $('list-title').textContent = entries.length === 1 ? '1 Datei' : `${entries.length} Dateien`;
@@ -763,14 +910,19 @@ function addFiles(list) {
 // File name suffix: applies to all files when saving and goes before the extension.
 // Characters that Windows or macOS do not allow in file names are dropped.
 const cleanSuffix = () => $('suffix').value.replace(/[\\/:*?"<>|\u0000-\u001f]/g, '').trim();
-function savedName(name) {
+// With a different output format (ext), the extension is replaced as well
+function savedName(name, ext = null) {
   const suffix = cleanSuffix(), dot = name.lastIndexOf('.');
-  if (!suffix) return name;
-  return dot > 0 ? name.slice(0, dot) + suffix + name.slice(dot) : name + suffix;
+  const stem = dot > 0 ? name.slice(0, dot) : name, oldExt = dot > 0 ? name.slice(dot + 1) : '';
+  const newExt = ext && ext !== oldExt.toLowerCase() ? ext : oldExt;
+  return stem + suffix + (newExt ? `.${newExt}` : '');
 }
+const resultName = entry => savedName(entry.file.name, entry.resultExt);
 function updateSuffixHint() {
-  const example = entries.length ? entries[0].file.name : 'Aufgabe.mp3';
-  $('suffix-hint').textContent = cleanSuffix() ? `Gespeichert als ${savedName(example)}` : 'Leer lassen, um die Originalnamen zu behalten';
+  const example = entries.length ? entries[0].file.name : 'Aufgabe.wav';
+  const ext = (example.split('.').pop() || '').toLowerCase();
+  const name = savedName(example, outExt(ext, settings()));
+  $('suffix-hint').textContent = name !== example ? `Gespeichert als ${name}` : 'Leer lassen, um die Originalnamen zu behalten';
 }
 
 function note(text) { noteEl.textContent = text; }
@@ -818,7 +970,7 @@ $('zip').addEventListener('click', async () => {
   if (!done.length) return;
   note('ZIP wird erstellt …');
   try {
-    saveFile('rauschen-werkzeug.zip', await zipStore(uniqueNames(done.map(e => ({ name: savedName(e.file.name), blob: e.result })))));
+    saveFile('rauschen-werkzeug.zip', await zipStore(uniqueNames(done.map(e => ({ name: resultName(e), blob: e.result })))));
     note('');
   } catch (e) {
     note(`ZIP konnte nicht erstellt werden: ${e.message || e}`);
@@ -826,11 +978,15 @@ $('zip').addEventListener('click', async () => {
 });
 $('redo').addEventListener('click', () => {
   const s = settings();
-  entries.filter(e => e.s && !sameSettings(e.s, s)).forEach(e => enqueue(e, s));
+  entries.filter(e => isStale(e, s)).forEach(e => enqueue(e, forEntry(e.ext, s)));
   $('zip').disabled = !entries.some(e => e.result);
   updateRedo();
 });
 $('underlay').addEventListener('input', updateRedo);
+document.querySelectorAll('input[name="codec"], #mp3-panel select').forEach(el => el.addEventListener('change', () => {
+  updateCodecPanel(); updateRedo(); updateSuffixHint();
+}));
+updateCodecPanel();   // in case the browser restores the form on reload
 $('nonoise').addEventListener('input', () => { updateNoiseFields(); updateRedo(); });
 updateNoiseFields();   // in case the browser restores the checkbox on reload
 // Remember the suffix for the next visit so it does not have to be typed in every time
