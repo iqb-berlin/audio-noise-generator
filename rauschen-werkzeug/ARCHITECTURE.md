@@ -63,17 +63,17 @@ Beim ersten Bearbeiten lädt der Browser `ffmpeg-core.wasm` (ca. 32 MB). Danach 
 Die Datei besteht aus vier Teilen, in dieser Reihenfolge:
 
 1. **Styles** (`<style>`). Farben und Linien sind als Variablen auf `:root` definiert (`--bg`, `--primary`, `--added`, `--content` usw.) und für den dunklen Modus noch einmal überschrieben. Danach folgen die Bausteine: Einstellungskarte, Ablagefeld, Dateiliste mit aufklappbaren Zeilen, Player und Knöpfe.
-2. **Markup** (`<main>`). Kopf, Einstellungskarte (Vorlauf, Rauschpegel, „Auch unter den Ton legen“, Zusatz im Dateinamen, Ausgabeformat mit MP3-Einstellungen), Ablagefeld, Dateiliste mit Kopfzeile und zum Schluss „Was genau passiert“. Die Dateizeilen erzeugt erst das Skript.
+2. **Markup** (`<main>`). Kopf, Einstellungskarte (Vorlauf mit Position, Rauschpegel, „Auch unter den Ton legen“, Zusatz im Dateinamen, Ausgabeformat mit MP3-Einstellungen), Ablagefeld, Dateiliste mit Kopfzeile und zum Schluss „Was genau passiert“. Die Dateizeilen erzeugt erst das Skript.
 3. **`file://`-Prüfung** (ein einfaches `<script>`). Zeigt den Hinweis an und sperrt das Auswahlfeld, wenn die Seite nicht über einen Webserver geöffnet wurde.
 4. **Hauptskript** (`<script type="module">`), gegliedert in Abschnitte mit Trennkommentaren:
 
 | Abschnitt | Wichtige Funktionen | Aufgabe |
 |---|---|---|
 | ffmpeg | `freshEngine`, `stopEngine`, `run` | FFmpeg starten, abbrechen, Befehle ausführen und deren Log mitschneiden |
-| Analyse | `probeInfo`, `target`, `audioArgs`, `audioGraph`, `calibrate`, `verify` | Datei untersuchen, Ausgabeformat bestimmen, Encoder-Einstellungen wählen, Filter bauen, Pegel abstimmen, Ergebnis prüfen |
+| Analyse | `probeInfo`, `target`, `audioArgs`, `padParts`, `audioGraph`, `calibrate`, `verify` | Datei untersuchen, Ausgabeformat bestimmen, Encoder-Einstellungen wählen, Filter bauen, Pegel abstimmen, Ergebnis prüfen |
 | Bearbeitung | `processEntry` | Der Ablauf für eine einzelne Datei |
 | Anzeige | `makeRow`, `drawWave` | Dateizeile mit Status, Wellenform, Player und Knöpfen |
-| Ablauf | `settings`, `outSettings`, `forEntry`, `updateCodecPanel`, `enqueue`, `addFiles`, `updateBatch`, `updateRedo`, `savedName`, `saveFile` | Einstellungen lesen, Warteschlange, Fortschritt, Wiederholen, Speichern |
+| Ablauf | `settings`, `updateLeadField`, `outSettings`, `forEntry`, `updateCodecPanel`, `enqueue`, `addFiles`, `updateBatch`, `updateRedo`, `savedName`, `saveFile` | Einstellungen lesen, Warteschlange, Fortschritt, Wiederholen, Speichern |
 
 ## Ablauf einer Datei
 
@@ -114,29 +114,30 @@ Für die Tonspur baut das Werkzeug diesen FFmpeg-Filtergraphen:
 
 ```
 [Original] ─ auf Abtastrate und Kanallayout bringen ─────────────────► [src]
-anoisesrc (weißes Rauschen, Länge = Vorlauf) ─ mono → Layout ────────► [pre]
-anoisesrc (weißes Rauschen, 0,1 s)           ─ mono → Layout ────────► [tail]
+anoisesrc (weißes Rauschen, Länge = vorderer Anteil) ─ mono → Layout ► [pre]
+anoisesrc (weißes Rauschen, hinterer Anteil oder 0,1 s) ─ mono → Layout ► [tail]
 anoisesrc (endlos) ─► amix mit [src]   (nur mit „Auch unter den Ton legen“)  ► [body]
 
 [pre] + [body] + [tail]  ── concat ──►  [aout]
 ```
 
+- **Position** (`s.place`): `padParts` teilt die eingestellte Zeit auf. „Anfang“ (`start`): alles in `[pre]`, `[tail]` ist 0,1 s lang. „Ende“ (`end`): `[tail]` hat die ganze Länge, `[pre]` ist 0,1 s lang, damit der Anfang nie ohne Rauschen ist. „Beide“ (`both`): je die Hälfte, `[pre]` mindestens 0,1 s. Bei 0 s wird `place` in den Einstellungen auf `start` gesetzt, damit ein Umschalten kein Wiederholen auslöst.
 - Das Rauschen ist weißes Rauschen mit gleichverteilten Abtastwerten. Es wird einkanalig erzeugt und bei Stereo auf beide Kanäle kopiert.
 - Der eingestellte Pegel ist der Spitzenpegel. Der mittlere Pegel (RMS) liegt rechnerisch 4,8 dB darunter, bei −70 dBFS also bei etwa −75 dB.
 - Mit „Kein Rauschen, nur Stille“ sind Vor- und Nachlauf digitale Stille (`anullsrc`), und es wird kein Rauschen unterlegt. Pegelabstimmung und Prüfung entfallen dann, die Markierung lautet `rauschen-werkzeug 1000ms stille`.
 - Bei einem Vorlauf von 0 s fällt `[pre]` weg, und `concat` verbindet nur `[body]` und `[tail]`. `anoisesrc` mit der Länge 0 würde endlos laufen.
-- Bei Videos wird zusätzlich das erste Bild für die Dauer des Vorlaufs festgehalten (`tpad=…:start_mode=clone`), damit Bild und Ton synchron bleiben. Das Bild wird dafür als H.264 neu encodiert (`-crf 20`, `-preset veryfast`). Bei einem Vorlauf von 0 s wird kein Bild festgehalten (`null`), neu encodiert wird trotzdem.
+- Bei Videos wird zusätzlich das erste Bild für die Dauer des Vorlaufs festgehalten (`tpad=…:start_mode=clone`) und bei „Ende“ oder „Beide“ das letzte für die Dauer des Nachlaufs (`stop_mode=clone`), damit Bild und Ton synchron bleiben. Das Bild wird dafür als H.264 neu encodiert (`-crf 20`, `-preset veryfast`). Bei einem Vorlauf von 0 s wird kein Bild festgehalten (`null`), neu encodiert wird trotzdem.
 
 ### Schritt 6: Prüfung (`verify`)
 
 Zwei Messungen an der fertigen Datei:
 
-1. Der mittlere Pegel im Vorlauf, gemessen ab 0,1 s. Liegt er mehr als 8 dB unter dem eingestellten Wert, steht in der Zeile „Vorlauf zu leise“. Bei einem Vorlauf unter 0,2 s gibt es nichts zu messen, die Messung entfällt.
+1. Der mittlere Pegel im Vorlauf, gemessen ab 0,1 s. Ist der Vorlauf kürzer als 0,2 s (Position „Ende“ mit seinen 0,1 s) wird stattdessen der Nachlauf gemessen, ab 0,1 s nach seinem Beginn bis 0,05 s vor dem Ende, berechnet aus der Dauer des Originals. `where` sagt, welcher Teil gemessen wurde. Liegt er mehr als 8 dB unter dem eingestellten Wert, steht in der Zeile „Vorlauf zu leise“. Bei einem Vorlauf unter 0,2 s gibt es nichts zu messen, die Messung entfällt.
 2. Stille Stellen ohne Rauschen, die länger als 0,2 s sind (`silencedetect`). Gibt es welche, erscheint ein Hinweis, und die Zeile klappt automatisch auf.
 
 ### Markierung
 
-Jede bearbeitete Datei bekommt im Kommentarfeld der Metadaten einen Eintrag wie `rauschen-werkzeug 1000ms -70dBFS`. Findet das Werkzeug diese Markierung in einer Datei, überspringt es sie. Geprüft wird nur der Anfang (`MARKER`), deshalb zählt auch die stille Variante. Das Skript `rauschen_werkzeug.py` schreibt dieselbe Markierung und erkennt sie ebenfalls. Deshalb überspringen Werkzeug und Skript gegenseitig ihre Dateien. Das Python-Skript ist ein eigenständiges Werkzeug und nicht Teil dieses Repositorys.
+Jede bearbeitete Datei bekommt im Kommentarfeld der Metadaten einen Eintrag wie `rauschen-werkzeug 1000ms -70dBFS`, bei der Position „Ende“ oder „Beide“ mit angehängtem `ende` bzw. `beide`. Findet das Werkzeug diese Markierung in einer Datei, überspringt es sie. Geprüft wird nur der Anfang (`MARKER`), deshalb zählt auch die stille Variante. Das Skript `rauschen_werkzeug.py` schreibt dieselbe Markierung und erkennt sie ebenfalls. Deshalb überspringen Werkzeug und Skript gegenseitig ihre Dateien. Das Python-Skript ist ein eigenständiges Werkzeug und nicht Teil dieses Repositorys.
 
 ## Warteschlange und Zustände
 
@@ -194,7 +195,7 @@ Mit „MP3“ bestimmt `target` für Audiodateien statt des Originalformats die 
 | Voreinstellungen, Grenzen, Schrittweiten | `NUM` im Abschnitt „Ablauf“ |
 | Erlaubte Formate | `AUDIO_EXT`, `VIDEO_EXT` und `MIME` oben im Hauptskript, dazu das `accept`-Attribut am Auswahlfeld |
 | Encoder und Bitraten | `audioArgs`, `snapKbps`, `fitKbps`, für MP3-Ausgabe `target` und die Auswahllisten im `#mp3-panel` |
-| Art und Länge des Rauschens, Nachlauf | `audioGraph` |
+| Art und Länge des Rauschens, Nachlauf, Position | `audioGraph`, `padParts` |
 | Videoqualität | Hauptbefehl in `processEntry` (`-crf`, `-preset`) |
 | Prüfschwellen | `verify` und der Hinweis zu stillen Stellen in `makeRow` |
 | Markierung | `MARKER` |

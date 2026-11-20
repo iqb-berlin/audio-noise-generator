@@ -212,7 +212,7 @@
   </div>
   <section class="settings" aria-label="Einstellungen">
     <div class="field">
-      <label class="field-label" for="lead">Vorlauf</label>
+      <label class="field-label" for="lead" id="lead-label">Vorlauf</label>
       <div class="fieldwrap">
         <button type="button" class="step" data-for="lead" data-dir="-1" aria-label="Vorlauf verringern">−</button>
         <input id="lead" type="text" inputmode="decimal" autocomplete="off" value="1" aria-describedby="lead-hint">
@@ -220,6 +220,15 @@
         <button type="button" class="step" data-for="lead" data-dir="1" aria-label="Vorlauf erhöhen">+</button>
       </div>
       <span class="hint" id="lead-hint">Rauschen vor dem ersten Ton, in Sekunden</span>
+    </div>
+    <div class="field">
+      <span class="field-label" id="place-label">Position</span>
+      <div class="segmented" role="radiogroup" aria-labelledby="place-label" aria-describedby="place-hint">
+        <label><input type="radio" name="place" value="start" checked>Anfang</label>
+        <label><input type="radio" name="place" value="end">Ende</label>
+        <label><input type="radio" name="place" value="both">Beide</label>
+      </div>
+      <span class="hint" id="place-hint">Bei „Beide“ wird die Zeit halbiert, je eine Hälfte vor und nach dem Ton</span>
     </div>
     <div class="field">
       <label class="field-label" for="level">Rauschpegel</label>
@@ -340,7 +349,7 @@
       <h2 id="list-title">0 Dateien</h2>
       <span class="batch" id="batch" hidden><span class="spinner" aria-hidden="true"></span><span id="batch-text" role="status"></span></span>
       <div class="legend" aria-hidden="true">
-        <span><i class="swatch added"></i>ergänzter Vorlauf</span>
+        <span><i class="swatch added"></i>ergänzter Vor- oder Nachlauf</span>
         <span><i class="swatch content"></i>ursprünglicher Ton</span>
       </div>
       <div class="list-actions">
@@ -355,7 +364,7 @@
 
   <details>
     <summary>Was genau passiert</summary>
-    <p>Vor den Ton wird ein Vorlauf aus leisem Rauschen gesetzt, auf Wunsch liegt dasselbe Rauschen auch unter dem restlichen Ton. Mit „Kein Rauschen, nur Stille“ besteht der Vorlauf stattdessen aus reiner Stille. Das verlängert die Datei nur, gegen Adapter, die den Anfang verschlucken, hilft es nicht. Bei Videos steht das erste Bild für die Dauer des Vorlaufs still, damit Bild und Ton synchron bleiben. Dafür wird das Video neu encodiert, was je nach Länge und Rechner einige Zeit dauern kann.</p>
+    <p>Vor den Ton wird ein Vorlauf aus leisem Rauschen gesetzt, auf Wunsch liegt dasselbe Rauschen auch unter dem restlichen Ton. Mit der Position „Ende“ kommt das Rauschen stattdessen als Nachlauf hinter den Ton, mit „Beide“ je zur Hälfte davor und dahinter. Mit „Kein Rauschen, nur Stille“ besteht der Vorlauf stattdessen aus reiner Stille. Das verlängert die Datei nur, gegen Adapter, die den Anfang verschlucken, hilft es nicht. Bei Videos steht das erste Bild für die Dauer des Vorlaufs still und das letzte für die Dauer des Nachlaufs, damit Bild und Ton synchron bleiben. Dafür wird das Video neu encodiert, was je nach Länge und Rechner einige Zeit dauern kann.</p>
     <p>Die Dateien behalten ihren Namen und ihr Format. Abtastrate und Bitrate entsprechen dem Original. Mit dem Ausgabeformat „MP3“ werden Audiodateien stattdessen als MP3 mit den gewählten Einstellungen gespeichert, Videos behalten ihr Format. Der Pegel wird so angepasst, dass das Rauschen nach der Komprimierung tatsächlich beim eingestellten Wert ankommt, und jede fertige Datei wird zur Kontrolle noch einmal geprüft.</p>
     <p>„Alle speichern“ fasst alle fertigen Dateien in einer ZIP-Datei zusammen.</p>
     <p>Bearbeitete Dateien erhalten eine Markierung im Kommentarfeld und werden bei einem zweiten Durchgang übersprungen. Das gilt auch für Dateien, die mit dem Skript <code>rauschen_werkzeug.py</code> bearbeitet wurden.</p>
@@ -491,10 +500,21 @@ function audioArgs(ext, a) {
   return ['-c:a', 'aac', '-b:a', `${Math.max(a.kbps || 128, 96)}k`];
 }
 
-// Filter graph: lead-in + optional noise under the audio + short tail.
+// Splits the set time: "start" all before the audio, "end" all after it, "both" half each.
+// With "end" and "both" the start still gets at least 0.1 s, so it is never bare (mirrors the short tail).
+function padParts(s) {
+  if (s.place === 'start') return { pre: s.lead, post: 0 };
+  const post = s.place === 'both' ? s.lead / 2 : s.lead;
+  return { pre: Math.max(0.1, s.lead - post), post };
+}
+const PAD_NAME = { start: 'Vorlauf', end: 'Nachlauf', both: 'Vor- und Nachlauf' };
+
+// Filter graph: lead-in + optional noise under the audio + tail.
 // Lead-in and tail are noise or, with "Kein Rauschen", digital silence. A lead-in of 0 s is left out
-// (a duration of 0 would mean "endless" for anoisesrc).
+// (a duration of 0 would mean "endless" for anoisesrc). The tail is the trailing part ("end", "both"),
+// otherwise a short 0.1 s so the audio does not stop abruptly.
 function audioGraph(a, s, amp, input = '0:a:0') {
+  const { pre, post } = padParts(s);
   const sr = a.sampleRate, layout = a.channels === 1 ? 'mono' : 'stereo';
   const noise = `aformat=sample_fmts=fltp,pan=${layout}|c0=c0${layout === 'stereo' ? '|c1=c0' : ''}`;
   const pad = d => s.noise
@@ -502,14 +522,14 @@ function audioGraph(a, s, amp, input = '0:a:0') {
     : `anullsrc=r=${sr}:cl=${layout},atrim=duration=${d},aformat=sample_fmts=fltp:channel_layouts=${layout}`;
   const g = [
     `[${input}]aresample=${sr},aformat=sample_fmts=fltp:channel_layouts=${layout}[src]`,
-    `${pad(0.1)}[tail]`,
+    `${pad(post > 0 ? post : 0.1)}[tail]`,
   ];
-  if (s.lead > 0) g.push(`${pad(s.lead)}[pre]`);
+  if (pre > 0) g.push(`${pad(pre)}[pre]`);
   if (s.noise && s.underlay) {
     g.push(`anoisesrc=c=white:a=${amp.toFixed(7)}:r=${sr},${noise}[bed]`);
     g.push('[src][bed]amix=inputs=2:duration=first:normalize=0[body]');
   } else g.push('[src]anull[body]');
-  g.push(s.lead > 0 ? '[pre][body][tail]concat=n=3:v=0:a=1[aout]' : '[body][tail]concat=n=2:v=0:a=1[aout]');
+  g.push(pre > 0 ? '[pre][body][tail]concat=n=3:v=0:a=1[aout]' : '[body][tail]concat=n=2:v=0:a=1[aout]');
   return g.join(';');
 }
 
@@ -538,21 +558,25 @@ async function measureCalibration(cext, a, s, base) {
   return base * Math.pow(10, corr / 20);
 }
 
-async function verify(name, s) {
+async function verify(name, s, total) {
   // Without noise there is no level to check, and silence in the lead-in is intended
-  if (!s.noise) return { leadDb: null, longestSilence: 0, ok: true };
-  // The level is measured from 0.1 s into the lead-in; a shorter lead-in has nothing to measure
-  const measureLead = s.lead >= 0.2;
+  if (!s.noise) return { leadDb: null, longestSilence: 0, ok: true, where: null };
+  // The level is measured in the lead-in from 0.1 s on, without one in the tail from 0.1 s after its start.
+  // A part shorter than 0.2 s has nothing to measure.
+  const { pre, post } = padParts(s);
+  const where = pre >= 0.2 ? 'pre' : post >= 0.2 ? 'post' : null;
+  const measureLead = where !== null;
   let leadDb = null;
   if (measureLead) {
-    const a = await run(['-i', name, '-vn', '-af', `atrim=0.1:${Math.max(0.15, s.lead - 0.05)},astats=metadata=0`, '-f', 'null', '-']);
+    const range = where === 'pre' ? `0.1:${Math.max(0.15, pre - 0.05)}` : `${total - post + 0.1}:${total - 0.05}`;
+    const a = await run(['-i', name, '-vn', '-af', `atrim=${range},astats=metadata=0`, '-f', 'null', '-']);
     leadDb = lastNumber(/RMS level dB: (-?[\d.]+)/g, a.log);
   }
   const b = await run(['-i', name, '-vn', '-af', `atrim=start=0.1,silencedetect=noise=${s.level - 20}dB:d=0.2`, '-f', 'null', '-']);
   const silences = [...b.log.matchAll(/silence_duration: ([\d.]+)/g)].map(m => parseFloat(m[1]));
   const longest = silences.length ? Math.max(...silences) : 0;
   const ok = !measureLead || (leadDb !== null && leadDb >= s.level - 8);
-  return { leadDb, longestSilence: longest, ok };
+  return { leadDb, longestSilence: longest, ok, where };
 }
 
 // ------------------------------------------------------------------ Processing
@@ -577,8 +601,12 @@ async function processEntry(entry, s) {
       amp = await calibrate(out.ext, out.a, s);
     }
     // The marker always starts with MARKER, also for a silent lead-in; only this prefix is checked
-    const marker = `${MARKER} ${Math.round(s.lead * 1000)}ms ${s.noise ? `${s.level}dBFS` : 'stille'}`;
-    const total = info.duration + s.lead + 0.1;
+    // Position only appears for "end" and "both", so markers of the lead-in stay as before
+    const marker = `${MARKER} ${Math.round(s.lead * 1000)}ms ${s.noise ? `${s.level}dBFS` : 'stille'}${s.place === 'start' ? '' : s.place === 'end' ? ' ende' : ' beide'}`;
+    const { pre, post } = padParts(s);
+    const total = info.duration + pre + (post > 0 ? post : 0.1);
+    // Video: hold the first frame during the lead-in and the last one during the tail
+    const vpad = [pre > 0 && `start_duration=${pre}:start_mode=clone`, post > 0 && `stop_duration=${post}:stop_mode=clone`].filter(Boolean);
     const onLine = line => {
       const t = /time=(\d+):(\d+):(\d+(?:\.\d+)?)/.exec(line);
       if (t && total) ui.progress(((+t[1]) * 3600 + (+t[2]) * 60 + parseFloat(t[3])) / total);
@@ -588,7 +616,7 @@ async function processEntry(entry, s) {
     let args;
     if (info.hasVideo) {
       args = ['-y', '-i', inName, '-filter_complex',
-        `[0:v:0]${s.lead > 0 ? `tpad=start_duration=${s.lead}:start_mode=clone` : 'null'}[v];${audioGraph(out.a, s, amp)}`,
+        `[0:v:0]${vpad.length ? `tpad=${vpad.join(':')}` : 'null'}[v];${audioGraph(out.a, s, amp)}`,
         '-map', '[v]', '-map', '[aout]', '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '20', '-pix_fmt', 'yuv420p',
         ...audioArgs(out.ext, out.a), '-movflags', '+faststart', '-metadata', `comment=${marker}`, outName];
     } else {
@@ -602,7 +630,7 @@ async function processEntry(entry, s) {
       ui.status('bad', `Fehler beim Bearbeiten: ${err}`); return;
     }
     ui.status('busy', 'Ergebnis wird geprüft …');
-    const check = await verify(outName, s);
+    const check = await verify(outName, s, total);
     const data = await ffmpeg.readFile(outName);
     entry.result = new Blob([data.buffer], { type: MIME[out.ext] });
     entry.resultExt = out.ext;
@@ -619,7 +647,7 @@ const fmtSec = v => `${String(+v.toFixed(2)).replace('.', ',')} s`;
 const cssVar = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 
 // Waveform as bars, level on a log scale (−90..0 dB) so the quiet noise is visible
-function drawWave(canvas, data, leadSamples) {
+function drawWave(canvas, data, leadSamples, endSamples = 0) {
   const dpr = window.devicePixelRatio || 1, w = canvas.clientWidth, h = canvas.clientHeight;
   if (!w) return;
   canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
@@ -633,7 +661,8 @@ function drawWave(canvas, data, leadSamples) {
     }
     const norm = Math.max(0, (20 * Math.log10(peak + 1e-9) + 90) / 90);
     const bh = Math.max(h * 0.06, norm * h);
-    g.fillStyle = (b + 0.5) * per < leadSamples ? added : content;
+    const pos = (b + 0.5) * per;
+    g.fillStyle = pos < leadSamples || pos >= data.length - endSamples ? added : content;
     g.fillRect(b * slot, (h - bh) / 2, Math.max(1, slot - 1), bh);
   }
 }
@@ -672,7 +701,7 @@ function makeRow(entry) {
   let url = null, media = null, canvas = null;
   const setOpen = o => {
     open = o; head.setAttribute('aria-expanded', String(o)); body.hidden = !o || head.disabled;
-    if (!body.hidden && canvas && canvas._wave) drawWave(canvas, canvas._wave.data, canvas._wave.lead);
+    if (!body.hidden && canvas && canvas._wave) drawWave(canvas, canvas._wave.data, canvas._wave.lead, canvas._wave.end);
   };
   head.addEventListener('click', () => setOpen(!open));
   const setStatus = (cls, text, icon = '') => { st.className = `row-status ${cls}`; st.innerHTML = icon; st.append(text); };
@@ -694,8 +723,10 @@ function makeRow(entry) {
       if (p !== null) bar.firstElementChild.style.width = `${Math.round(Math.min(1, Math.max(0, p)) * 100)}%`;
     },
     async done(entry, check, s, isVideo) {
-      if (check.ok) setStatus('good', s.lead > 0 ? `Vorlauf ${fmtSec(s.lead)}${s.noise ? '' : ', Stille'}` : 'Ohne Vorlauf', ICON.check);
-      else setStatus('bad', 'Vorlauf zu leise', ICON.warn);
+      const name = PAD_NAME[s.place], part = check.where === 'post' ? 'Nachlauf' : 'Vorlauf';
+      const len = s.place === 'both' ? `je ${fmtSec(s.lead / 2)}` : fmtSec(s.lead);
+      if (check.ok) setStatus('good', s.lead > 0 ? `${name} ${len}${s.noise ? '' : ', Stille'}` : 'Ohne Vorlauf', ICON.check);
+      else setStatus('bad', `${part} zu leise`, ICON.warn);
       // Converted to another format: show it next to the size
       if (entry.resultExt !== entry.ext) meta.textContent = `${fmtSize(entry.file.size)} → ${entry.resultExt.toUpperCase()}, ${fmtSize(entry.result.size)}`;
 
@@ -706,14 +737,16 @@ function makeRow(entry) {
 
       canvas = make('canvas', 'wave');
       canvas.setAttribute('role', 'img');
-      canvas.setAttribute('aria-label', s.lead > 0
-        ? `Wellenform: ${fmtSec(s.lead)} Vorlauf${s.noise ? '' : ' als Stille'}, danach der ursprüngliche Ton`
-        : 'Wellenform: der ursprüngliche Ton ohne Vorlauf');
+      const silent = s.noise ? '' : ' als Stille';
+      canvas.setAttribute('aria-label', s.lead === 0 ? 'Wellenform: der ursprüngliche Ton ohne Vorlauf'
+        : s.place === 'end' ? `Wellenform: 0,1 s ${s.noise ? 'Rauschen' : 'Stille'}, der ursprüngliche Ton, danach ${fmtSec(s.lead)} Nachlauf${silent}`
+        : s.place === 'both' ? `Wellenform: je ${fmtSec(s.lead / 2)} Vor- und Nachlauf${silent}, dazwischen der ursprüngliche Ton`
+        : `Wellenform: ${fmtSec(s.lead)} Vorlauf${silent}, danach der ursprüngliche Ton`);
       canvas.hidden = true;
       body.append(canvas);
 
       const issues = [];
-      if (!check.ok) issues.push('Rauschen im Vorlauf zu leise, bitte Pegel erhöhen');
+      if (!check.ok) issues.push(`Rauschen im ${part} zu leise, bitte Pegel erhöhen`);
       if (check.longestSilence > 0.2) issues.push(`Stille Stelle von ${fmtSec(check.longestSilence)} ohne Rauschen`);
       if (issues.length) {
         const ul = make('ul', 'issues');
@@ -786,8 +819,9 @@ function makeRow(entry) {
         const buf = await ctx.decodeAudioData(await entry.result.arrayBuffer());
         if (canvas !== cv) return;   // reset or reprocessed in the meantime
         cv.hidden = false;
-        cv._wave = { data: buf.getChannelData(0), lead: Math.round(s.lead * buf.sampleRate) };
-        if (!body.hidden) drawWave(cv, cv._wave.data, cv._wave.lead);
+        const { pre, post } = padParts(s);
+        cv._wave = { data: buf.getChannelData(0), lead: Math.round(pre * buf.sampleRate), end: Math.round(post * buf.sampleRate) };
+        if (!body.hidden) drawWave(cv, cv._wave.data, cv._wave.lead, cv._wave.end);
       } catch { /* the waveform is optional */ }
     }
   };
@@ -817,6 +851,8 @@ function settings() {
   const noise = !$('nonoise').checked;
   return {
     lead: clampNum('lead', readNum('lead') ?? NUM.lead.def),
+    // Without any added time the position does not matter; that way changing it does not trigger a repeat
+    place: clampNum('lead', readNum('lead') ?? NUM.lead.def) > 0 ? document.querySelector('input[name="place"]:checked').value : 'start',
     noise,
     // Without noise, level and "under the audio" do not matter; that way changing them does not trigger a repeat
     level: noise ? clampNum('level', readNum('level') ?? NUM.level.def) : null,
@@ -840,7 +876,7 @@ const forEntry = (ext, s) => VIDEO_EXT.includes(ext) ? { ...s, out: { codec: 'or
 const outExt = (ext, s) => AUDIO_EXT.includes(ext) && s.out.codec === 'mp3' ? 'mp3' : ext;
 function updateCodecPanel() {
   const mp3 = outSettings().codec === 'mp3', vbr = $('mp3-mode').value === 'vbr';
-  document.querySelectorAll('.segmented label').forEach(l => l.classList.toggle('on', l.querySelector('input').checked));
+  updateSegments();
   $('mp3-panel').hidden = !mp3;
   $('mp3-kbps-field').hidden = vbr; $('mp3-quality-field').hidden = !vbr;
 }
@@ -849,7 +885,19 @@ function updateNoiseFields() {
   $('level').disabled = off; $('underlay').disabled = off;
   document.querySelectorAll('.step[data-for="level"]').forEach(b => { b.disabled = off; });
   ['level', 'underlay'].forEach(id => $(id).closest('.field').classList.toggle('off', off));
-  $('lead-hint').textContent = `${off ? 'Stille' : 'Rauschen'} vor dem ersten Ton, in Sekunden`;
+  updateLeadField();
+}
+// Label, hint and button labels of the time field follow the position
+function updateLeadField() {
+  const place = document.querySelector('input[name="place"]:checked').value, name = PAD_NAME[place];
+  const where = { start: 'vor dem ersten Ton', end: 'nach dem letzten Ton', both: 'vor und nach dem Ton, je zur Hälfte' }[place];
+  $('lead-label').textContent = name;
+  $('lead-hint').textContent = `${$('nonoise').checked ? 'Stille' : 'Rauschen'} ${where}, in Sekunden`;
+  document.querySelectorAll('.step[data-for="lead"]').forEach(b => b.setAttribute('aria-label', `${name} ${b.dataset.dir > 0 ? 'erhöhen' : 'verringern'}`));
+}
+// Segmented switches: highlight the chosen option (class instead of :has(), see the styles)
+function updateSegments() {
+  document.querySelectorAll('.segmented label').forEach(l => l.classList.toggle('on', l.querySelector('input').checked));
 }
 const sameSettings = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 const isStale = (e, s) => e.s && !sameSettings(e.s, forEntry(e.ext, s));
@@ -987,6 +1035,9 @@ document.querySelectorAll('input[name="codec"], #mp3-panel select').forEach(el =
   updateCodecPanel(); updateRedo(); updateSuffixHint();
 }));
 updateCodecPanel();   // in case the browser restores the form on reload
+document.querySelectorAll('input[name="place"]').forEach(el => el.addEventListener('change', () => {
+  updateSegments(); updateLeadField(); updateRedo();
+}));
 $('nonoise').addEventListener('input', () => { updateNoiseFields(); updateRedo(); });
 updateNoiseFields();   // in case the browser restores the checkbox on reload
 // Remember the suffix for the next visit so it does not have to be typed in every time
@@ -1019,7 +1070,7 @@ drop.addEventListener('drop', e => { e.preventDefault(); addFiles([...e.dataTran
 let resizeTimer;
 window.addEventListener('resize', () => {
   clearTimeout(resizeTimer);
-  resizeTimer = setTimeout(() => document.querySelectorAll('canvas.wave').forEach(c => c._wave && drawWave(c, c._wave.data, c._wave.lead)), 150);
+  resizeTimer = setTimeout(() => document.querySelectorAll('canvas.wave').forEach(c => c._wave && drawWave(c, c._wave.data, c._wave.lead, c._wave.end)), 150);
 });
 </script>
 </body>

@@ -13,6 +13,7 @@ Diese Seite erklärt jedes Bedienelement der Reihe nach, so wie es auf dem Bilds
 1. [Erste Schritte](#erste-schritte)
 2. [Einstellungen](#einstellungen)
    - [Vorlauf](#vorlauf)
+   - [Position](#position)
    - [Rauschpegel](#rauschpegel)
    - [Rauschen unter dem Ton](#rauschen-unter-dem-ton)
    - [Ohne Rauschen](#ohne-rauschen)
@@ -75,9 +76,28 @@ Wie lange das Rauschen vor dem ersten Ton dauert, in Sekunden.
 - Werte außerhalb des Bereichs werden auf die Grenze gesetzt. `10` wird also zu 5 s.
 - Steht etwas im Feld, das keine Zahl ist, wird der Rahmen **rot**. Gerechnet wird dann mit der Voreinstellung.
 - Ist [Ohne Rauschen](#ohne-rauschen) angekreuzt, heißt der Hinweis darunter „Stille vor dem ersten Ton“.
+- Mit der [Position](#position) „Ende“ heißt das Feld **Nachlauf**, mit „Beide“ **Vor- und Nachlauf**. Die eingestellte Zeit ist dann die Länge des Nachlaufs bzw. die Summe aus beiden.
 - **0 s** setzt keinen Vorlauf, der Ton beginnt sofort. Mit [Rauschen unter dem Ton](#rauschen-unter-dem-ton) liegt das Rauschen dann nur unter dem Ton, sonst bekommt die Datei nur den kurzen Nachlauf von 0,1 s und die Markierung. Die Zeile zeigt danach **✓ Ohne Vorlauf**.
 
 **Empfehlung:** 1 s reicht für die meisten Adapter. Wird der Anfang trotzdem verschluckt, auf 1,5 oder 2 s erhöhen.
+
+[↑ Nach oben](#inhalt)
+
+### Position
+
+Umschalter **„Anfang“ | „Ende“ | „Beide“**. Voreinstellung: Anfang.
+
+| Position | Wirkung bei 1 s | Status in der Zeile |
+|---|---|---|
+| **Anfang** | 1 s Rauschen vor dem Ton, am Ende der kurze Nachlauf von 0,1 s | ✓ Vorlauf 1 s |
+| **Ende** | 1 s Rauschen hinter dem Ton, am Anfang ein kurzer Vorlauf von 0,1 s | ✓ Nachlauf 1 s |
+| **Beide** | die Zeit wird halbiert: 0,5 s davor und 0,5 s dahinter (davor mindestens 0,1 s) | ✓ Vor- und Nachlauf je 0,5 s |
+
+- Am Anfang steht immer mindestens ein kurzes Rauschen von 0,1 s, auch bei „Ende“. Das ist so kurz wie der Nachlauf bei „Anfang“ und weckt Adapter nicht zuverlässig.
+- Gegen Adapter, die den **Anfang** verschlucken, hilft deshalb nur „Anfang“ oder „Beide“. Bei „Beide“ steht vorne nur die halbe Zeit, also gegebenenfalls den Wert verdoppeln.
+- Mit [Ohne Rauschen](#ohne-rauschen) ist es an derselben Stelle Stille statt Rauschen.
+- Bei Videos steht das erste Bild während des Vorlaufs und das letzte Bild während des Nachlaufs still.
+- Bei einem [Vorlauf](#vorlauf) von 0 s spielt die Position keine Rolle.
 
 [↑ Nach oben](#inhalt)
 
@@ -193,7 +213,7 @@ Erscheint, sobald die erste Datei hineingezogen wurde.
 |---|---|
 | **„3 Dateien“** | Anzahl der Dateien in der Liste, auch die nicht unterstützten |
 | **◌ „1 von 3 fertig“** | Fortschritt, solange noch Dateien warten oder bearbeitet werden. Verschwindet, wenn alles durch ist. |
-| **Ocker** ▬ ergänzter Vorlauf | Farbe des neuen Vorlaufs in der [Wellenform](#wellenform) |
+| **Ocker** ▬ ergänzter Vor- oder Nachlauf | Farbe des neuen Vor- oder Nachlaufs in der [Wellenform](#wellenform) |
 | **Petrol** ▬ ursprünglicher Ton | Farbe des ursprünglichen Tons in der [Wellenform](#wellenform) |
 | **„ZIP wird erstellt …“** | erscheint kurz beim [Speichern als ZIP](#alle-speichern) |
 | **ZIP konnte nicht erstellt werden: …** | meist ist die ZIP größer als 4 GB. Die Dateien einzeln speichern. |
@@ -204,7 +224,7 @@ Rechts stehen die drei Knöpfe, die folgen.
 
 ### Mit neuen Einstellungen wiederholen
 
-Erscheint **nur**, wenn [Vorlauf](#vorlauf), [Rauschpegel](#rauschpegel), [Rauschen unter dem Ton](#rauschen-unter-dem-ton), [Ohne Rauschen](#ohne-rauschen) oder das [Ausgabeformat](#ausgabeformat) nicht mehr zu den Einstellungen passen, mit denen die Dateien bearbeitet wurden.
+Erscheint **nur**, wenn [Vorlauf](#vorlauf), [Position](#position), [Rauschpegel](#rauschpegel), [Rauschen unter dem Ton](#rauschen-unter-dem-ton), [Ohne Rauschen](#ohne-rauschen) oder das [Ausgabeformat](#ausgabeformat) nicht mehr zu den Einstellungen passen, mit denen die Dateien bearbeitet wurden.
 
 - Ein Klick bearbeitet alle betroffenen Dateien neu, mit den aktuellen Einstellungen. Man muss sie nicht noch einmal auswählen.
 - Wer die alten Werte wieder einstellt, lässt den Knopf verschwinden.
@@ -254,8 +274,10 @@ Während der Bearbeitung läuft unter dem Zeilenkopf ein dünner **Fortschrittsb
 | Ergebnis wird geprüft … | das Ergebnis wird nachgemessen | nichts |
 | **✓ Vorlauf 1 s** | fertig und geprüft | speichern |
 | **✓ Vorlauf 1 s, Stille** | fertig, Vorlauf als Stille ([Ohne Rauschen](#ohne-rauschen)) | speichern |
+| **✓ Nachlauf 1 s** | fertig, [Position](#position) „Ende“ | speichern |
+| **✓ Vor- und Nachlauf je 0,5 s** | fertig, [Position](#position) „Beide“ | speichern |
 | **✓ Ohne Vorlauf** | fertig, [Vorlauf](#vorlauf) auf 0 s gestellt | speichern |
-| ⚠ **Vorlauf zu leise** | fertig, aber das Rauschen kommt zu leise an | [Rauschpegel](#rauschpegel) erhöhen und [wiederholen](#mit-neuen-einstellungen-wiederholen) |
+| ⚠ **Vorlauf zu leise** / **Nachlauf zu leise** | fertig, aber das Rauschen kommt zu leise an | [Rauschpegel](#rauschpegel) erhöhen und [wiederholen](#mit-neuen-einstellungen-wiederholen) |
 | Bereits bearbeitet, Markierung gefunden | die Datei hat schon einen Vorlauf von diesem Werkzeug oder vom Skript | nichts, das Original ist schon fertig |
 | ⚠ Keine Tonspur gefunden, Datei bleibt unverändert | die Datei enthält keinen Ton | Datei prüfen |
 | ⚠ Kein Bild gefunden, bitte als Audiodatei speichern | eine `.mp4` oder `.mov` ohne Bild | als `.m4a` speichern und erneut hineinziehen |
@@ -269,7 +291,7 @@ Während der Bearbeitung läuft unter dem Zeilenkopf ein dünner **Fortschrittsb
 
 Das Balkenbild in der aufgeklappten Zeile zeigt die **fertige** Datei:
 
-- **Ocker:** der ergänzte Vorlauf
+- **Ocker:** der ergänzte Vorlauf bzw. Nachlauf
 - **Petrol:** der ursprüngliche Ton
 
 Die Höhe ist logarithmisch dargestellt. Deshalb ist auch das sehr leise Rauschen als Balken zu sehen, obwohl es nicht zu hören ist. Bei [Ohne Rauschen](#ohne-rauschen) ist der ockerfarbene Teil ganz flach.
@@ -284,7 +306,7 @@ Rote Hinweise in der aufgeklappten Zeile. Zeilen mit Hinweisen klappen automatis
 
 | Hinweis | Bedeutung | Was tun |
 |---|---|---|
-| Rauschen im Vorlauf zu leise, bitte Pegel erhöhen | das Rauschen kommt nach dem Komprimieren mehr als 8 dB unter dem eingestellten Wert an | [Rauschpegel](#rauschpegel) um 5 dB erhöhen und [wiederholen](#mit-neuen-einstellungen-wiederholen) |
+| Rauschen im Vorlauf (bzw. Nachlauf) zu leise, bitte Pegel erhöhen | das Rauschen kommt nach dem Komprimieren mehr als 8 dB unter dem eingestellten Wert an | [Rauschpegel](#rauschpegel) um 5 dB erhöhen und [wiederholen](#mit-neuen-einstellungen-wiederholen) |
 | Stille Stelle von 1,2 s ohne Rauschen | irgendwo im Ton gibt es eine Stelle ohne Rauschen, länger als 0,2 s | meist harmlos; ist [Rauschen unter dem Ton](#rauschen-unter-dem-ton) aus, einschalten und wiederholen |
 
 [↑ Nach oben](#inhalt)
@@ -296,9 +318,9 @@ Die Zeile mit dem runden Knopf zum Anhören des **Ergebnisses**.
 | Element | Funktion |
 |---|---|
 | ▶ / ⏸ | abspielen bzw. pausieren. Es läuft immer nur eine Datei, eine andere zu starten pausiert die vorige. |
-| `0:01 / 0:04` | aktuelle Position und Gesamtlänge, inklusive Vorlauf |
+| `0:01 / 0:04` | aktuelle Position und Gesamtlänge, inklusive Vor- und Nachlauf |
 | Regler | an eine Stelle springen |
-| „Rauschen im Ergebnis −75 dB“ | gemessener mittlerer Rauschpegel im Vorlauf. Fehlt bei [Ohne Rauschen](#ohne-rauschen). |
+| „Rauschen im Ergebnis −75 dB“ | gemessener mittlerer Rauschpegel im Vorlauf, bei der [Position](#position) „Ende“ im Nachlauf. Fehlt bei [Ohne Rauschen](#ohne-rauschen). |
 
 Steht statt der Zeit **„Vorschau in diesem Browser nicht abspielbar, die Datei ist trotzdem fertig“**, kann der Browser dieses Format nicht abspielen, etwa manche MOV-Videos in Firefox. Die Datei lässt sich trotzdem speichern.
 
@@ -380,7 +402,7 @@ Beim zweiten Mal steht „Bereits bearbeitet, Markierung gefunden“. Es wird ke
 
 ### Warum dauern Videos so lange?
 
-Damit Bild und Ton synchron bleiben, wird das erste Bild für die Dauer des Vorlaufs festgehalten und das Video neu kodiert. Das dauert etwa so lange wie das Video selbst, bei hoher Auflösung länger.
+Damit Bild und Ton synchron bleiben, wird das erste Bild für die Dauer des Vorlaufs (und das letzte für die des Nachlaufs) festgehalten und das Video neu kodiert. Das dauert etwa so lange wie das Video selbst, bei hoher Auflösung länger.
 
 ### Ein großes Video scheitert mit einem Fehler.
 
@@ -407,7 +429,7 @@ Nein. Alles passiert im Browser. Gespeichert wird nur der [Zusatz im Dateinamen]
 | Begriff | Erklärung |
 |---|---|
 | **Vorlauf** | der Abschnitt, der vor dem ursprünglichen Ton eingefügt wird: leises Rauschen oder, mit [Ohne Rauschen](#ohne-rauschen), Stille |
-| **Nachlauf** | 0,1 s Rauschen oder Stille am Dateiende, damit der Ton nicht hart abbricht |
+| **Nachlauf** | Rauschen oder Stille am Dateiende: mit der [Position](#position) „Ende“ oder „Beide“ der eingestellte Anteil, sonst 0,1 s, damit der Ton nicht hart abbricht |
 | **Rauschen** | hier: gleichmäßiges „Weißes Rauschen“ in sehr geringer Lautstärke |
 | **dBFS** | Dezibel bezogen auf die größtmögliche Lautstärke einer Datei. 0 dBFS ist das Maximum, −70 dBFS ist sehr leise. |
 | **Markierung** | ein Eintrag im Kommentarfeld der Datei, z. B. `rauschen-werkzeug 1000ms -70dBFS`. Daran erkennt das Werkzeug bereits bearbeitete Dateien. |
